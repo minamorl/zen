@@ -1,11 +1,10 @@
-import { SupabaseClient } from '@supabase/supabase-js';
 import { initTRPC } from '@trpc/server';
 import { CreateNextContextOptions } from '@trpc/server/adapters/next';
 
 import { createClient } from '@supabase/supabase-js'
 import { Database } from './database.types'
 
-export const createContext = async (opts: CreateNextContextOptions): Promise<{ supabase: SupabaseClient<Database> }> => {
+export const createContext = async (opts: CreateNextContextOptions) => {
   const supabaseUrl = 'https://spiwxmtkmymqltdfxogg.supabase.co'
   const supabaseKey = process.env.SUPABASE_KEY
   const supabase = createClient<Database>(supabaseUrl, supabaseKey!)
@@ -21,3 +20,5 @@ const t = initTRPC.context<typeof createContext>().create();
 // Base router and procedure helpers
 export const router = t.router;
 export const procedure = t.procedure;
+
+
