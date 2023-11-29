@@ -2,22 +2,19 @@ import { z } from 'zod';
 import { procedure, router } from '../trpc';
 
 export const appRouter = router({
-  hello: procedure
-    .input(
-      z.object({
-        text: z.string(),
-      }),
-    )
-    .query((opts) => {
-      return {
-        greeting: `hello ${opts.input.text}`,
-      };
-    }),
   getAllPosts: procedure
     .query(async (opts) => {
       const {data} = await opts.ctx.supabase.from("posts").select()
       return data 
     }),
+  createPost: procedure
+    .query(async (opts) => {
+      const {data} = await opts.ctx.supabase.from("posts").insert({
+        raw_text: 'testtest',
+        persona_id: '99c2bfd9-f5bd-47ac-ac21-b6904da987b7'
+      })
+      return data
+     }),
   createUser: procedure
     .input(
       z.object({

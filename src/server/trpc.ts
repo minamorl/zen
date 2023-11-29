@@ -5,8 +5,7 @@ import { CreateNextContextOptions } from '@trpc/server/adapters/next';
 import { createClient } from '@supabase/supabase-js'
 import { Database } from './database.types'
 
-export const createContext = async (opts: CreateNextContextOptions) => {
-
+export const createContext = async (opts: CreateNextContextOptions): Promise<{ supabase: SupabaseClient<Database> }> => {
   const supabaseUrl = 'https://spiwxmtkmymqltdfxogg.supabase.co'
   const supabaseKey = process.env.SUPABASE_KEY
   const supabase = createClient<Database>(supabaseUrl, supabaseKey!)
