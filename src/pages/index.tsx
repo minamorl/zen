@@ -14,7 +14,7 @@ export default function IndexPage() {
       </header>
       <div>
         <ul>
-        { posts.data.map(v => <li>{v.raw_text}</li>) }
+        { posts.data.map(v => <li key={v.id}>{v.raw_text}</li>) }
         </ul>
       </div>
     </div>
