@@ -24,6 +24,10 @@ export const appRouter = router({
       })
       return data
      }),
+  me: procedure
+    .query((opts) => {
+      return opts.ctx.supabase.auth.getUser(opts.ctx.req.cookies.token)
+    }),
   signIn: procedure
     .input(
       z.object({
@@ -37,13 +41,15 @@ export const appRouter = router({
         password: opts.input.password
       })
       if (!user.user) {
-        return {
-          'error': 'User not found'
-        }
+        throw new Error()
       }
-      console.log(user.user.id)
+      opts.ctx.res.setHeader('set-cookie', 'token=' + user.session.access_token)
+      
       const personas = await opts.ctx.supabase.from('personas').select().eq('user_id', user.user.id)
-      return personas.data
+      return {
+        user,
+        personas
+      }
     }),
 
   createUser: procedure
