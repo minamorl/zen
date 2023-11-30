@@ -56,7 +56,10 @@ export default function IndexPage() {
             <div>{formatDistance(parseISO(v.created_at), new Date(), { addSuffix: true})}</div>
             
           </li>
-            { v.threads.map(x => <li key={x.id} className='shadow p-4 m-4 mx-8 rounded'><div>{x.raw_text}</div></li>)} 
+            { v.threads.map(x => <li key={x.id} className='shadow p-4 m-4 mx-8 rounded'>
+              <div>{x.raw_text}</div>
+              <div>{formatDistance(parseISO(x.created_at), new Date(), { addSuffix: true})}</div>
+            </li>)} 
             { selectedPost === v.id && <li key='input' className='shadow p-4 m-4 mx-8 rounded'>
               <textarea onChange={e => setThreadInput(e.currentTarget.value)} value={threadInput} className="rounded border-l-1 border-black w-full h-full resize-none"/>
               <button onClick={() => {
