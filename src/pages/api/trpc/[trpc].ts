@@ -12,9 +12,14 @@ export const appRouter = router({
       return data 
     }),
   createPost: procedure
+    .input(
+      z.object({
+        raw_text: z.string()
+      })
+    )
     .mutation(async (opts) => {
       const {data} = await opts.ctx.supabase.from("posts").insert({
-        raw_text: 'testtest',
+        raw_text: opts.input.raw_text,
         persona_id: '99c2bfd9-f5bd-47ac-ac21-b6904da987b7'
       })
       return data

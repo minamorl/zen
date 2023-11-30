@@ -1,61 +1,43 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { trpc } from '../utils/trpc';
+import { on } from 'events';
+import { SubmitHandler, useForm } from 'react-hook-form';
 
-const SignInForm = () => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const {data, mutate} = trpc.signIn.useMutation()
-  console.log(data)
-
-  return <div>
-    <input
-      type="text"
-      placeholder="email"
-      value={email}
-      onChange={(e) => setEmail(e.target.value)}
-    />
-    <input
-      type="text"
-      placeholder="password"
-      value={password}
-      onChange={(e) => setPassword(e.target.value)}
-    />
-    <button
-      onClick={() => {
-        mutate({
-          email,
-          password
-        })
-      }}
-    >
-      Sign In
-    </button>
-    <h2>Persona list</h2>
-    <ul>
-      { Array.isArray(data) && data.map(v => <li>{v.name}</li>) }
-    </ul>
-    </div>
-}
+type Inputs = {
+  raw_text: string
+};
 
 
 export default function IndexPage() {
-  const {data: posts } = trpc.getAllPosts.useQuery()
-  const {data } = trpc.createPost.useMutation()
-  
-  
+  const {data, isLoading, mutate} = trpc.createPost.useMutation()
+  const [key, setKey] = useState('invalid')
+  const {handleSubmit, register} = useForm<Inputs>()
+  const {data: posts, refetch, isRefetching} = trpc.getAllPosts.useQuery({})
+
+  const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
+    mutate({
+      raw_text: inputs.raw_text
+    })
+    setKey(inputs.raw_text)
+    setTimeout(() => refetch(), 100)
+  }
+
+
   if (!posts) {
     return <div>Loading...</div>;
   }
-  console.log(posts)
   return (
     <div>
-      <SignInForm />
-
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <input
+          {...register("raw_text")}
+        />
+        <input type="submit" value="submit" />
+      </form>
       <div>
-        // create input form
-
         <ul>
-        { posts.map(v => <li key={v.id}>{v.raw_text}</li>) }
+          { posts.map(v => <li key={v.id}>{v.raw_text}</li>) }
+          { isRefetching && <li key={key}>{key}</li>}
         </ul>
       </div>
     </div>
