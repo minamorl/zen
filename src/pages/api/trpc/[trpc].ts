@@ -14,13 +14,17 @@ export const appRouter = router({
   createPost: procedure
     .input(
       z.object({
+        persona_id: z.string(),
         raw_text: z.string()
       })
     )
     .mutation(async (opts) => {
+      if (!opts.ctx.user.user) throw new Error('Post creation failed')
+      const personas = await opts.ctx.supabase.from("personas").select().eq('user_id', opts.ctx.user.user.id).eq('id', opts.input.persona_id)
+      if (personas.count && personas.count < 1) throw new Error('Persona not found')
       const {data} = await opts.ctx.supabase.from("posts").insert({
         raw_text: opts.input.raw_text,
-        persona_id: '99c2bfd9-f5bd-47ac-ac21-b6904da987b7'
+        persona_id: opts.input.persona_id
       })
       return data
      }),

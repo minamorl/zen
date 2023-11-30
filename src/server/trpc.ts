@@ -8,9 +8,11 @@ export const createContext = async ({req, res}: CreateNextContextOptions) => {
   const supabaseUrl = 'https://spiwxmtkmymqltdfxogg.supabase.co'
   const supabaseKey = process.env.SUPABASE_KEY
   const supabase = createClient<Database>(supabaseUrl, supabaseKey!)
+  const {data: user} = await supabase.auth.getUser(req.cookies.token)
 
   return {
     supabase,
+    user,
     req,
     res,
   }
