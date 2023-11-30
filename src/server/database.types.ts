@@ -67,6 +67,35 @@ export interface Database {
           }
         ]
       }
+      resources: {
+        Row: {
+          created_at: string
+          id: string
+          path: string | null
+          post_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          path?: string | null
+          post_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          path?: string | null
+          post_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resources_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       threads: {
         Row: {
           created_at: string

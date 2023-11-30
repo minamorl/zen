@@ -18,6 +18,10 @@ export const appRouter = router({
                                                                     raw_text,
                                                                     persona_id,
                                                                     created_at
+                                                                  ),
+                                                                  resources (
+                                                                    id,
+                                                                    path
                                                                   )
 
 
@@ -25,6 +29,18 @@ export const appRouter = router({
                                                                           ascending: false})
       console.log(data)
       return data 
+    }),
+  createResource: procedure
+    .input(
+      z.object({
+        path: z.string(),
+        post_id: z.string()
+      })
+    ).mutation(async (opts) => {
+      return await opts.ctx.supabase.from('resources').insert({
+        path: opts.input.path,
+        post_id: opts.input.post_id
+      }).select()
     }),
   createPost: procedure
     .input(
@@ -40,7 +56,8 @@ export const appRouter = router({
       const {data} = await opts.ctx.supabase.from("posts").insert({
         raw_text: opts.input.raw_text,
         persona_id: opts.input.persona_id
-      })
+      }).select()
+      
       return data
      }),
   getPersonas: procedure
