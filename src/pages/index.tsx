@@ -40,7 +40,10 @@ export default function IndexPage() {
       </form>
       <div>
         <ul>
-          { posts.map(v => <li key={v.id}>{v.raw_text}</li>) }
+          { posts.map(v => <li key={v.id} className="shadow p-4 m-4 rounded">
+            <div>{v.raw_text}</div>
+            <div>{v.created_at}</div>
+          </li>) }
           { isRefetching && <li key={key}>{key}</li>}
         </ul>
       </div>
