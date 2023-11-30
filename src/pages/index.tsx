@@ -69,10 +69,6 @@ export default function IndexPage() {
     
     if(!data) return
 
-    createResource({
-      path: r.successful[0].name,
-      post_id: data[0].id
-    })
     
     setKey(inputs.raw_text)
     setTimeout(() => refetch(), 1000)
@@ -96,17 +92,17 @@ export default function IndexPage() {
             {...register("raw_text")}
           />
           <input className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full' type="submit" value="Post" />
-          <Dashboard uppy={uppy} hideUploadButton  />
+          { null && <Dashboard uppy={uppy} hideUploadButton  /> }
         </form>
       <div>
-        <ul>      k
-          { board.posts.map(v => <><li key={v.id} className="shadow p-4 m-4 rounded" onClick={() => setSelectedPost(v.id)}>
+        <ul>      
+          { board.posts.map(v => <><li key={v.id} className="shadow p-8 m-4 rounded" onClick={() => setSelectedPost(v.id)}>
             <div>{v.raw_text}</div>
             <div>{v.resources && v?.resources?.[0]?.path}</div>
             <div>{formatDistance(parseISO(v.created_at), new Date(), { addSuffix: true})}</div>
             
           </li>
-            { v.threads.map(x => <li key={x.id} className='shadow p-4 m-4 mx-8 rounded'>
+            { v.threads.map(x => <li key={x.id} className='shadow p-8 m-4 mx-8 rounded'>
               <div>{x.raw_text}</div>
               <div>{formatDistance(parseISO(x.created_at), new Date(), { addSuffix: true})}</div>
             </li>)} 
