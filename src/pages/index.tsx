@@ -41,11 +41,12 @@ export default function IndexPage() {
           <Link href={'/signin'}>SignIn</Link>
         </div>
       }
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <input
+      <form onSubmit={handleSubmit(onSubmit)} className='shadow p-4 m-4 rounded'>
+        <textarea
+        className="rounded border-l-1 border-black w-full h-full resize-none"
           {...register("raw_text")}
         />
-        <input type="submit" value="submit" />
+        <input className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full' type="submit" value="Post" />
       </form>
       <div>
         <ul>

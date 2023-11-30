@@ -21,7 +21,8 @@ export const appRouter = router({
                                                                   )
 
 
-                                                                  `)
+                                                                  `).order('created_at', {
+                                                                          ascending: false})
       console.log(data)
       return data 
     }),
