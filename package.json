@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@react-spring/web": "^9.7.3",
     "@rpldy/uploady": "^1.6.1",
     "@supabase/supabase-js": "^2.39.0",
     "@tanstack/react-query": "^4.36.1",

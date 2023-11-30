@@ -10,6 +10,7 @@ import Tus from '@uppy/tus'
 import '@uppy/core/dist/style.min.css';
 import '@uppy/dashboard/dist/style.min.css';
 import { randomUUID } from 'crypto';
+import { Header } from '../header/Header'
 
 type Inputs = {
   raw_text: string
@@ -43,6 +44,7 @@ const uppy = new Uppy()
 
         console.log('file added', file)
       })
+
 export default function IndexPage() {
   const {data, isLoading, mutate} = trpc.createPost.useMutation()
   const [key, setKey] = useState('invalid')
@@ -82,11 +84,10 @@ export default function IndexPage() {
   }
   return (
     <div>
-      { me?
+      <Header />
+      { me &&
         <div>
           Your persona id is {me && Array.isArray(me.personas) && me.personas[0].id}
-        </div> : <div>
-          <Link href={'/signin'}>SignIn</Link>
         </div>
       }
         <form onSubmit={handleSubmit(onSubmit)} className='shadow p-4 m-4 rounded'>
