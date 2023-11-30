@@ -8,7 +8,21 @@ import {createContext} from '../../../server/trpc'
 export const appRouter = router({
   getPosts: procedure
     .query(async (opts) => {
-      const {data} = await opts.ctx.supabase.from("posts").select()
+      const {data} = await opts.ctx.supabase.from("posts").select(`
+                                                                  id,
+                                                                  raw_text,
+                                                                  persona_id,
+                                                                  created_at,
+                                                                  threads (
+                                                                    id,
+                                                                    raw_text,
+                                                                    persona_id,
+                                                                    created_at
+                                                                  )
+
+
+                                                                  `)
+      console.log(data)
       return data 
     }),
   createPost: procedure
@@ -76,6 +90,23 @@ export const appRouter = router({
       })
       if (error) return error
       return data
+    }),
+  createThread: procedure
+    .input(
+      z.object({
+        post_id: z.string(),
+        raw_text: z.string(),
+        persona_id: z.string(),
+      })
+    )
+    .mutation(async (opts) => {
+      const r = await opts.ctx.supabase.from('threads').insert({
+        post_id: opts.input.post_id,
+        raw_text: opts.input.raw_text,
+        persona_id: opts.input.persona_id
+      })
+      return r.data
+
     })
 });
 export type AppRouter = typeof appRouter

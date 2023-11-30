@@ -67,6 +67,45 @@ export interface Database {
           }
         ]
       }
+      threads: {
+        Row: {
+          created_at: string
+          id: string
+          persona_id: string | null
+          post_id: string | null
+          raw_text: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          persona_id?: string | null
+          post_id?: string | null
+          raw_text?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          persona_id?: string | null
+          post_id?: string | null
+          raw_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "threads_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "threads_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
