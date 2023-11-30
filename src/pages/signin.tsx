@@ -8,28 +8,32 @@ type Inputs = {
   password: string
 };
 export default function SignInPage() {
-  const [accessToken, setAccesssToken] = useState('')
   const {register, handleSubmit} = useForm<Inputs>()
-  const { data: signin, mutate } = trpc.signIn.useMutation()
+  const { data , mutate } = trpc.signIn.useMutation()
   const onSubmit: SubmitHandler<Inputs> = (data) => {
     mutate({
       email: data.email,
       password: data.password
     })
   };
-  useEffect(() => signin && setAccesssToken(signin.user.session.access_token), [signin])
 
 
-  const {data} = trpc.me.useQuery()
+  const {data: personas} = trpc.getPersonas.useQuery()
   console.log(data)
     
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <input {...register("email")} />
-      <input {...register("password")} />
-      <input type="submit" />
-    </form>
+    <div>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <input {...register("email")} />
+        <input {...register("password")} />
+        <input type="submit" />
+      </form>
+      <ul>
+        { personas?.user && 'You are logged in as ' + personas.user.email}
+        { personas?.personas && personas.personas.map(v => <li key={v.id}>{v.name}</li>) }
+      </ul>
+    </div>
   );
 
   

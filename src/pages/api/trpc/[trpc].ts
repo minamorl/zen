@@ -6,7 +6,7 @@ import {createContext} from '../../../server/trpc'
 
 // Body
 export const appRouter = router({
-  getAllPosts: procedure
+  getPosts: procedure
     .query(async (opts) => {
       const {data} = await opts.ctx.supabase.from("posts").select()
       return data 
@@ -24,9 +24,15 @@ export const appRouter = router({
       })
       return data
      }),
-  me: procedure
-    .query((opts) => {
-      return opts.ctx.supabase.auth.getUser(opts.ctx.req.cookies.token)
+  getPersonas: procedure
+    .query(async (opts) => {
+      const {data: user} = await opts.ctx.supabase.auth.getUser(opts.ctx.req.cookies.token)
+      if (!user.user) throw new Error('User not found')
+      const personas = await opts.ctx.supabase.from('personas').select().eq('user_id', user.user.id)
+      return {
+        user: user.user,
+        personas: personas.data
+      }
     }),
   signIn: procedure
     .input(
