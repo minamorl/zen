@@ -30,7 +30,7 @@ export default function IndexPage() {
   return (
     <div>
       <div>
-        Your persona id is {Array.isArray(me.personas) && me.personas[0].id}
+        Your persona id is {me && Array.isArray(me.personas) && me.personas[0].id}
       </div>
       <form onSubmit={handleSubmit(onSubmit)}>
         <input
