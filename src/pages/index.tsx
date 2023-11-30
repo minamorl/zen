@@ -47,7 +47,9 @@ export default function IndexPage() {
   const {data, isLoading, mutate} = trpc.createPost.useMutation()
   const [key, setKey] = useState('invalid')
   const {handleSubmit, register} = useForm<Inputs>()
-  const {data: posts, refetch, isRefetching} = trpc.getPosts.useQuery()
+  const {data: board, refetch, isRefetching} = trpc.getBoard.useQuery({
+    name: 'test'
+  })
   const { data: me} = trpc.getPersonas.useQuery()
   const [selectedPost, setSelectedPost] = useState('')
   const {mutate: createThread} = trpc.createThread.useMutation()
@@ -75,7 +77,7 @@ export default function IndexPage() {
   }
 
 
-  if (!posts) {
+  if (!board) {
     return <div>Loading...</div>;
   }
   return (
@@ -97,7 +99,7 @@ export default function IndexPage() {
         </form>
       <div>
         <ul>      k
-          { posts.map(v => <><li key={v.id} className="shadow p-4 m-4 rounded" onClick={() => setSelectedPost(v.id)}>
+          { board.posts.map(v => <><li key={v.id} className="shadow p-4 m-4 rounded" onClick={() => setSelectedPost(v.id)}>
             <div>{v.raw_text}</div>
             <div>{v.resources && v?.resources?.[0]?.path}</div>
             <div>{formatDistance(parseISO(v.created_at), new Date(), { addSuffix: true})}</div>

@@ -6,6 +6,36 @@ import {createContext} from '../../../server/trpc'
 
 // Body
 export const appRouter = router({
+  getBoard: procedure
+    .input(
+      z.object({
+        name: z.string()
+      })
+    )
+    .query(async (opts) => {
+
+      const {data} = await opts.ctx.supabase.from("boards").select(`
+                                                                  id,
+                                                                  posts (
+                                                                    id,
+                                                                    raw_text,
+                                                                    persona_id,
+                                                                    created_at,
+                                                                    threads (
+                                                                      id,
+                                                                      raw_text,
+                                                                      persona_id,
+                                                                      created_at
+                                                                    ),
+                                                                    resources (
+                                                                      id,
+                                                                      path
+                                                                    )
+                                                                  )`)
+      if (!data) return null
+      return data[0]
+
+    }),
   getPosts: procedure
     .query(async (opts) => {
       const {data} = await opts.ctx.supabase.from("posts").select(`
@@ -25,8 +55,10 @@ export const appRouter = router({
                                                                   )
 
 
+
                                                                   `).order('created_at', {
                                                                           ascending: false})
+      
       console.log(data)
       return data 
     }),
@@ -55,7 +87,9 @@ export const appRouter = router({
       if (personas.count && personas.count < 1) throw new Error('Persona not found')
       const {data} = await opts.ctx.supabase.from("posts").insert({
         raw_text: opts.input.raw_text,
-        persona_id: opts.input.persona_id
+        persona_id: opts.input.persona_id,
+        board_id: 'd7946875-8f2e-434d-90ec-b08524dd5303'
+        
       }).select()
       
       return data

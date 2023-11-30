@@ -9,6 +9,24 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      boards: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
       personas: {
         Row: {
           created_at: string
@@ -40,24 +58,34 @@ export interface Database {
       }
       posts: {
         Row: {
+          board_id: string | null
           created_at: string
           id: string
           persona_id: string | null
           raw_text: string | null
         }
         Insert: {
+          board_id?: string | null
           created_at?: string
           id?: string
           persona_id?: string | null
           raw_text?: string | null
         }
         Update: {
+          board_id?: string | null
           created_at?: string
           id?: string
           persona_id?: string | null
           raw_text?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_persona_id_fkey"
             columns: ["persona_id"]
