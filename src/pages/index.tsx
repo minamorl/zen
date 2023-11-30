@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { trpc } from '../utils/trpc';
 import { SubmitHandler, useForm } from 'react-hook-form';
+import Link from 'next/link'
 
 type Inputs = {
   raw_text: string
@@ -33,9 +34,13 @@ export default function IndexPage() {
   }
   return (
     <div>
-      <div>
-        Your persona id is {me && Array.isArray(me.personas) && me.personas[0].id}
-      </div>
+      { me?
+        <div>
+          Your persona id is {me && Array.isArray(me.personas) && me.personas[0].id}
+        </div> : <div>
+          <Link href={'/signin'}>SignIn</Link>
+        </div>
+      }
       <form onSubmit={handleSubmit(onSubmit)}>
         <input
           {...register("raw_text")}
