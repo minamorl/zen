@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { trpc } from '../utils/trpc';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import Link from 'next/link'
+import { format, formatDistance, parseISO } from 'date-fns'
 
 type Inputs = {
   raw_text: string
@@ -52,19 +53,23 @@ export default function IndexPage() {
         <ul>
           { posts.map(v => <><li key={v.id} className="shadow p-4 m-4 rounded" onClick={() => setSelectedPost(v.id)}>
             <div>{v.raw_text}</div>
-            <div>{v.created_at}</div>
+            <div>{formatDistance(parseISO(v.created_at), new Date(), { addSuffix: true})}</div>
             
           </li>
             { v.threads.map(x => <li key={x.id} className='shadow p-4 m-4 mx-8 rounded'><div>{x.raw_text}</div></li>)} 
             { selectedPost === v.id && <li key='input' className='shadow p-4 m-4 mx-8 rounded'>
               <textarea onChange={e => setThreadInput(e.currentTarget.value)} value={threadInput} className="rounded border-l-1 border-black w-full h-full resize-none"/>
-              <button onClick={() => createThread({
-      raw_text: threadInput,
-      post_id: v.id,
-      persona_id: me?.personas?.[0].id ?? '' ,
+              <button onClick={() => {
+                createThread({
+                  raw_text: threadInput,
+                  post_id: v.id,
+                  persona_id: me?.personas?.[0].id ?? '' ,
+                })
+                window.setTimeout(() => refetch(), 500)
 
 
-              })} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full">Create Thread</button>
+
+              }} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full">Create Thread</button>
             </li> }
               
             
