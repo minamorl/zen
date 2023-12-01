@@ -44,13 +44,6 @@ const PersonaSelector = () => {
     setPersona(selectedOption.value as any);
   };
 
-  useEffect(() => {
-    if (personas && personas.length > 0 && !persona) {
-      // Automatically set the first persona if none is selected
-      setPersona(personas[0].id);
-    }
-  }, [personas, persona, setPersona]);
-
   return (
     <Select
       options={options}
