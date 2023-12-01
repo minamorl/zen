@@ -16,6 +16,9 @@ export const appRouter = router({
 
       const {data} = await opts.ctx.supabase.from("boards").select(`
                                                                   id,
+                                                                  created_at,
+                                                                  name,
+                                                                  description,
                                                                   posts (
                                                                     id,
                                                                     raw_text,
