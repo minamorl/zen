@@ -1,4 +1,4 @@
-import {useForm} from 'react-hook-form'
+import {useForm, SubmitHandler} from 'react-hook-form'
 import { trpc } from '../utils/trpc';
 
 // Create persona using react-form-hook
@@ -6,10 +6,15 @@ import { trpc } from '../utils/trpc';
 //
 // react-hook-form
 // use tailwindcss
+
+type Inputs = {
+  name: string,
+};
 const CreatePersonaForm = () => {
-  const { register, handleSubmit, watch, formState: { errors } } = useForm();
+
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<Inputs>();
   const { mutate } = trpc.createPersona.useMutation()
-  const onSubmit = data => mutate({name: data.name}) 
+  const onSubmit: SubmitHandler<Inputs> = data => mutate({name: data.name}) 
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
