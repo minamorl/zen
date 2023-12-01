@@ -32,8 +32,16 @@ export const appRouter = router({
                                                                       path
                                                                     )
                                                                   )`).eq('name', opts.input.name)
-      if (!data) return null
-      return data[0]
+                                                                  
+    if (!data) return null
+    const board = data[0]
+    // sort by created_at desc
+    board.posts.sort((a, b) => {
+      if (a.created_at < b.created_at) return 1
+      if (a.created_at > b.created_at) return -1
+      return 0
+    })
+    return board
 
     }),
   getPosts: procedure
@@ -52,15 +60,14 @@ export const appRouter = router({
                                                                   resources (
                                                                     id,
                                                                     path
-                                                                  )
+                                                                  )`)
+    // sort by created_at desc
+      if (data) data.sort((a, b) => {
+        if (a.created_at < b.created_at) return 1
+        if (a.created_at > b.created_at) return -1
+        return 0
+      })
 
-
-
-                                                                  `).order('created_at', {
-                                                                            ascending: false
-                                                                          })
-      
-      console.log(data)
       return data 
     }),
   createResource: procedure
