@@ -57,7 +57,7 @@ export const appRouter = router({
 
 
                                                                   `).order('created_at', {
-                                                                            ascending: true 
+                                                                            ascending: false
                                                                           })
       
       console.log(data)
