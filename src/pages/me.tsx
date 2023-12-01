@@ -40,7 +40,7 @@ const PersonaSelector = () => {
     label: persona.name,
   }));
 
-  const handleChange = (selectedOption) => {
+  const handleChange = (selectedOption: any) => {
     setPersona(selectedOption.value);
   };
 
