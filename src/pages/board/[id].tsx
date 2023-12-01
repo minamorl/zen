@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { trpc } from '../utils/trpc';
+import { trpc } from '../../utils/trpc';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import Link from 'next/link'
 import { format, formatDistance, parseISO } from 'date-fns'
@@ -10,14 +10,15 @@ import Tus from '@uppy/tus'
 import '@uppy/core/dist/style.min.css';
 import '@uppy/dashboard/dist/style.min.css';
 import { randomUUID } from 'crypto';
-import { Header } from '../header/Header'
+import { Header } from '../../header/Header'
+import { NextApiRequest, NextApiResponse } from 'next';
+import { useRouter } from 'next/router'
 
 type Inputs = {
   raw_text: string
 };
 
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwaXd4bXRrbXltcWx0ZGZ4b2dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDEyNjk1NzMsImV4cCI6MjAxNjg0NTU3M30.aYkKWGpKvfoOj84p5T4lED0Iy6VXK8yH3Jo0h2kEQMc'
-const DEFAULT_BOARD = 'test'
 
 const uppy = new Uppy()
         .use(Tus, {
@@ -46,12 +47,13 @@ const uppy = new Uppy()
         console.log('file added', file)
       })
 
-export default function IndexPage() {
+      export default function PostPage(req: NextApiRequest, res: NextApiResponse) {
   const {data, isLoading, mutate} = trpc.createPost.useMutation()
+  const router = useRouter()
   const [key, setKey] = useState('invalid')
   const {handleSubmit, register} = useForm<Inputs>()
   const {data: board, refetch, isRefetching} = trpc.getBoard.useQuery({
-    name: 'test'
+    name: router.query.id
   })
   const { data: me} = trpc.getPersonas.useQuery()
   console.log(me)

@@ -9,7 +9,7 @@ export const appRouter = router({
   getBoard: procedure
     .input(
       z.object({
-        name: z.string()
+        name: z.string(),
       })
     )
     .query(async (opts) => {
@@ -31,7 +31,7 @@ export const appRouter = router({
                                                                       id,
                                                                       path
                                                                     )
-                                                                  )`)
+                                                                  )`).eq('name', opts.input.name)
       if (!data) return null
       return data[0]
 
