@@ -1,20 +1,22 @@
 import {useForm, SubmitHandler} from 'react-hook-form'
+import { useEffect } from 'react';
+import Select from 'react-select';
+import { usePersona } from '../context/personaContext'; // Adjust the import path as needed
 import { trpc } from '../utils/trpc';
 
-// Create persona using react-form-hook
-// generate a persona  
-//
-// react-hook-form
-// use tailwindcss
 
 type Inputs = {
   name: string,
 };
-const CreatePersonaForm = () => {
+const CreatePersonaForm: React.FC<{refetch: () => void}> = ({refetch}) => {
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<Inputs>();
   const { mutate } = trpc.createPersona.useMutation()
-  const onSubmit: SubmitHandler<Inputs> = data => mutate({name: data.name}) 
+  const onSubmit: SubmitHandler<Inputs> = data => {
+    mutate({name: data.name}) 
+    // refresh
+    setTimeout(() => refetch(), 1000)
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -29,12 +31,48 @@ const CreatePersonaForm = () => {
   );
 };
 
+const PersonaSelector = () => {
+  const [persona, setPersona] = usePersona();
+  const { data: personas } = trpc.getPersonas.useQuery();
+
+  const options = personas?.personas?.map((persona) => ({
+    value: persona.id,
+    label: persona.name,
+  }));
+
+  const handleChange = (selectedOption) => {
+    setPersona(selectedOption.value);
+  };
+
+  useEffect(() => {
+    if (personas && personas.length > 0 && !persona) {
+      // Automatically set the first persona if none is selected
+      setPersona(personas[0].id);
+    }
+  }, [personas, persona, setPersona]);
+
+  return (
+    <Select
+      options={options}
+      value={options?.find(option => option.value === persona)}
+      onChange={handleChange}
+      className="text-sm"
+    />
+  );
+};
+
 
 export default function MePage() {
-  const {data} = trpc.getPersonas.useQuery()
-  return <div>
-    <h2>Manage Your Persona</h2>
-    <CreatePersonaForm />  
-    {data?.personas?.map(v => (<li key={v.id}>{v.name}</li>))}
-  </div>
+  const [persona] = usePersona();
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold">Switch Your Persona</h2>
+      <CreatePersonaForm refetch={() => {}} />
+      <PersonaSelector />
+      <div>
+        {persona && <p>Selected Persona ID: {persona}</p>}
+      </div>
+    </div>
+  );
 }
