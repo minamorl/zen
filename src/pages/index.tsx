@@ -53,6 +53,7 @@ export default function IndexPage() {
     name: 'test'
   })
   const { data: me} = trpc.getPersonas.useQuery()
+  console.log(me)
   const [selectedPost, setSelectedPost] = useState('')
   const {mutate: createThread} = trpc.createThread.useMutation()
   const {mutate: createResource} = trpc.createResource.useMutation()

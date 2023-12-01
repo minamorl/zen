@@ -97,7 +97,8 @@ export const appRouter = router({
      }),
   getPersonas: procedure
     .query(async (opts) => {
-      const {data: user} = await opts.ctx.supabase.auth.getUser(opts.ctx.req.cookies.token)
+      const {data: user, error} = await opts.ctx.supabase.auth.getUser(opts.ctx.req.cookies.token)
+      console.log(error)
       if (!user.user) throw new Error('User not found')
       const personas = await opts.ctx.supabase.from('personas').select().eq('user_id', user.user.id)
       return {
@@ -160,7 +161,22 @@ export const appRouter = router({
       })
       return r.data
 
-    })
+    }),
+  createPersona: procedure
+    .input(
+      z.object({
+        name: z.string()
+      })
+    )
+    .mutation(async (opts) => {
+      if (!opts.ctx.user.user) throw new Error('Persona creation failed')
+      const {data, error} = await opts.ctx.supabase.from('personas').insert({
+        name: opts.input.name,
+        user_id: opts.ctx.user.user.id
+      }).select()
+      console.log(data, error)
+      return data
+    }),
 });
 export type AppRouter = typeof appRouter
 // export API handler
