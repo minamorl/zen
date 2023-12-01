@@ -86,11 +86,10 @@ export const appRouter = router({
       if (!opts.ctx.user.user) throw new Error('Post creation failed')
       const personas = await opts.ctx.supabase.from("personas").select().eq('user_id', opts.ctx.user.user.id).eq('id', opts.input.persona_id)
       if (personas.count && personas.count < 1) throw new Error('Persona not found')
-      const {data} = await opts.ctx.supabase.from("posts").insert({
+      const {data, error} = await opts.ctx.supabase.from("posts").insert({
         raw_text: opts.input.raw_text,
         persona_id: opts.input.persona_id,
         board_id: 'd7946875-8f2e-434d-90ec-b08524dd5303'
-        
       }).select()
       
       return data
@@ -98,7 +97,6 @@ export const appRouter = router({
   getPersonas: procedure
     .query(async (opts) => {
       const {data: user, error} = await opts.ctx.supabase.auth.getUser(opts.ctx.req.cookies.token)
-      console.log(error)
       if (!user.user) throw new Error('User not found')
       const personas = await opts.ctx.supabase.from('personas').select().eq('user_id', user.user.id)
       return {
@@ -154,12 +152,12 @@ export const appRouter = router({
       })
     )
     .mutation(async (opts) => {
-      const r = await opts.ctx.supabase.from('threads').insert({
+      const {data, error} = await opts.ctx.supabase.from('threads').insert({
         post_id: opts.input.post_id,
         raw_text: opts.input.raw_text,
         persona_id: opts.input.persona_id
       })
-      return r.data
+      return data
 
     }),
   createPersona: procedure
