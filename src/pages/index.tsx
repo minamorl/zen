@@ -65,6 +65,7 @@ export default function IndexPage() {
 
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
     const r = await uppy.upload()
+    if (!persona) return
     
     mutate({
       raw_text: inputs.raw_text,
