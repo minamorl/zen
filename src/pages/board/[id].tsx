@@ -53,7 +53,7 @@ const uppy = new Uppy()
   const [key, setKey] = useState('invalid')
   const {handleSubmit, register} = useForm<Inputs>()
   const {data: board, refetch, isRefetching} = trpc.getBoard.useQuery({
-    name: router.query.id
+    name: router.query.id as string
   })
   const { data: me} = trpc.getPersonas.useQuery()
   console.log(me)
