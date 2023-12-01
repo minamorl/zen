@@ -1,6 +1,6 @@
 import { useEffect, useContext, createContext, useState, SetStateAction, Dispatch} from 'react';
 
-export const PersonaContext = createContext<[string, Dispatch<SetStateAction<string>>] | []>([]);
+export const PersonaContext = createContext<[string, Dispatch<SetStateAction<string>>]>(['', () => {}]);
 
 export function PersonaProvider({ children }: { children: React.ReactNode}) {
   const [persona, setPersona] = useState('');

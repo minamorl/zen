@@ -41,7 +41,7 @@ const PersonaSelector = () => {
   }));
 
   const handleChange = (selectedOption: any) => {
-    setPersona(selectedOption.value);
+    setPersona(selectedOption.value as any);
   };
 
   useEffect(() => {
