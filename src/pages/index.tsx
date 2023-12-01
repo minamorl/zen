@@ -85,19 +85,29 @@ export default function IndexPage() {
   return (
     <div>
       <Header />
+
       { me &&
         <div>
-          Your persona id is {persona}
+          DEBUG: Your persona id is {persona}
         </div>
       }
-        <form onSubmit={handleSubmit(onSubmit)} className='shadow p-4 m-4 rounded'>
+        <div>
+          <div className="shadow p-8 m-4 rounded-xl">
+            <h2 className="text-2xl">#{board.name}</h2>
+            <div>{board.description}</div>
+            <div className='text-cyan-800'>Created at {formatDistance(parseISO(board.created_at), new Date(), { addSuffix: true})}</div>
+
+        <div className='border-t-2 border-gray-200 my-4'></div>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <textarea
-            className="rounded border-l-1 border-black w-full h-full resize-none"
+            className="rounded border-l-1 border-black w-full h-full resize-none focus:outline-none"
             {...register("raw_text")}
           />
           <input className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full' type="submit" value="Post" />
           { null && <Dashboard uppy={uppy} hideUploadButton  /> }
         </form>
+          </div>
+        </div>
       <div>
         <ul>      
           { board.posts.map(v => <><li key={v.id} className="shadow p-8 m-4 rounded" onClick={() => setSelectedPost(v.id)}>
