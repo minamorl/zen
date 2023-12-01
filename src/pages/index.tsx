@@ -11,6 +11,7 @@ import '@uppy/core/dist/style.min.css';
 import '@uppy/dashboard/dist/style.min.css';
 import { randomUUID } from 'crypto';
 import { Header } from '../header/Header'
+import { usePersona } from '../context/personaContext';
 
 type Inputs = {
   raw_text: string
@@ -47,6 +48,7 @@ const uppy = new Uppy()
       })
 
 export default function IndexPage() {
+  const [persona] = usePersona();
   const {data, isLoading, mutate} = trpc.createPost.useMutation()
   const [key, setKey] = useState('invalid')
   const {handleSubmit, register} = useForm<Inputs>()
@@ -66,7 +68,7 @@ export default function IndexPage() {
     
     mutate({
       raw_text: inputs.raw_text,
-      persona_id: me?.personas?.[0].id ?? '' ,
+      persona_id: persona
     })
     
     if(!data) return
@@ -85,7 +87,7 @@ export default function IndexPage() {
       <Header />
       { me &&
         <div>
-          Your persona id is {me && Array.isArray(me.personas) && me.personas[0].id}
+          Your persona id is {persona}
         </div>
       }
         <form onSubmit={handleSubmit(onSubmit)} className='shadow p-4 m-4 rounded'>
