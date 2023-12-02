@@ -56,6 +56,7 @@ export default function IndexPage() {
   const [persona] = usePersona();
   const { data, isLoading, mutate } = trpc.createPost.useMutation();
   const [key, setKey] = useState("invalid");
+  const [submitting, setSubmitting] = useState(false);
   const { handleSubmit, register } = useForm<Inputs>();
   const {
     data: board,
@@ -73,6 +74,7 @@ export default function IndexPage() {
   const [threadInput, setThreadInput] = useState("");
 
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
+    setSubmitting(true);
     const r = await uppy.upload();
     if (!persona) return;
 
@@ -81,14 +83,21 @@ export default function IndexPage() {
       persona_id: persona,
     });
 
-    if (!data) return;
-
     setKey(inputs.raw_text);
-    setTimeout(() => refetch(), 1000);
+    setTimeout(() => {
+      refetch().then(() => setSubmitting(false));
+    }, 1000);
   };
 
   if (!board) {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        <Header />
+
+        {me && <div>DEBUG: Your persona id is {persona}</div>}
+        <div> Loading...</div>
+      </div>
+    );
   }
   return (
     <div>
@@ -123,6 +132,17 @@ export default function IndexPage() {
       </div>
       <div>
         <ul>
+          {submitting && (
+            <li key="submitting" className="shadow p-8 m-4 rounded opacity-50">
+              <div>{key}</div>
+              <div className="text-cyan-800">
+                Created at{" "}
+                {formatDistance(Date.now(), new Date(), {
+                  addSuffix: true,
+                })}
+              </div>
+            </li>
+          )}
           {board.posts.map((v) => (
             <>
               <li
@@ -172,7 +192,6 @@ export default function IndexPage() {
               )}
             </>
           ))}
-          {isRefetching && <li key={key}>{key}</li>}
         </ul>
       </div>
     </div>
