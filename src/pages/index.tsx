@@ -114,6 +114,7 @@ export default function IndexPage() {
           <form onSubmit={handleSubmit(onSubmit)}>
             <textarea
               className="rounded border-l-1 border-black w-full h-full resize-none focus:outline-none"
+              rows={5}
               {...register("raw_text")}
             />
             <input
