@@ -123,7 +123,6 @@ export default function PostPage(req: NextApiRequest, res: NextApiResponse) {
                 onClick={() => setSelectedPost(v.id)}
               >
                 <div>{v.raw_text}</div>
-                <div>{v.resources && v?.resources?.[0]?.path}</div>
                 <div>
                   {formatDistance(parseISO(v.created_at), new Date(), {
                     addSuffix: true,
