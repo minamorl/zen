@@ -10,7 +10,6 @@ import Tus from "@uppy/tus";
 import "@uppy/core/dist/style.min.css";
 import "@uppy/dashboard/dist/style.min.css";
 import { randomUUID } from "crypto";
-import { Header } from "../header/Header";
 import { usePersona } from "../context/personaContext";
 
 type Inputs = {
@@ -92,8 +91,6 @@ export default function IndexPage() {
   if (!board) {
     return (
       <div>
-        <Header />
-
         {me && <div>DEBUG: Your persona id is {persona}</div>}
         <div> Loading...</div>
       </div>
@@ -101,8 +98,6 @@ export default function IndexPage() {
   }
   return (
     <div>
-      <Header />
-
       {me && <div>DEBUG: Your persona id is {persona}</div>}
       <div>
         <div className="shadow p-8 m-4 rounded-xl">
@@ -147,7 +142,7 @@ export default function IndexPage() {
             <>
               <li
                 key={v.id}
-                className="shadow p-8 m-4 rounded"
+                className="shadow p-8 m-4 rounded cursor-pointer"
                 onClick={() => setSelectedPost(v.id)}
               >
                 <div>{v.raw_text}</div>
