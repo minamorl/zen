@@ -103,26 +103,26 @@ export interface Database {
           created_at: string;
           id: string;
           path: string | null;
-          post_id: string | null;
+          persona_id: string | null;
         };
         Insert: {
           created_at?: string;
           id?: string;
           path?: string | null;
-          post_id?: string | null;
+          persona_id?: string | null;
         };
         Update: {
           created_at?: string;
           id?: string;
           path?: string | null;
-          post_id?: string | null;
+          persona_id?: string | null;
         };
         Relationships: [
           {
-            foreignKeyName: "resources_post_id_fkey";
-            columns: ["post_id"];
+            foreignKeyName: "resources_persona_id_fkey";
+            columns: ["persona_id"];
             isOneToOne: false;
-            referencedRelation: "posts";
+            referencedRelation: "personas";
             referencedColumns: ["id"];
           },
         ];
