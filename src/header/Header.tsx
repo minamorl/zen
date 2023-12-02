@@ -10,7 +10,9 @@ const SignInButton = () => {
 export const Header = () => {
   return (
     <header className="w-full m-4 flex text-2xl sticky top-0">
-      <h1 className="flex-none mr-8 w-6 font-extrabold display-block">zen</h1>
+      <h1 className="flex-none mr-8 w-6 font-extrabold display-block">
+        <Link href="/">zen</Link>
+      </h1>
       <div className="flex-1">A progressive social media platform</div>
       <SignInButton />
     </header>
