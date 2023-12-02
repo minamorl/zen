@@ -146,8 +146,18 @@ export default function IndexPage() {
                 className="shadow p-8 m-4 rounded cursor-pointer"
                 onClick={() => setSelectedPost(v.id)}
               >
+                {v?.personas?.resources?.[0]?.path && (
+                  <div className="rounded-full w-20">
+                    <img
+                      src={
+                        "https://spiwxmtkmymqltdfxogg.supabase.co/storage/v1/object/public/images/" +
+                        v?.personas?.resources?.[0]?.path
+                      }
+                      className="rounded-full w-20"
+                    />
+                  </div>
+                )}
                 <div>{v.raw_text}</div>
-                <div>{v.resources && v?.resources?.[0]?.path}</div>
                 <div>
                   {formatDistance(parseISO(v.created_at), new Date(), {
                     addSuffix: true,

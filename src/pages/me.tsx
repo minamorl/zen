@@ -62,6 +62,8 @@ const PersonaSelector = () => {
 
 export default function MePage() {
   const [persona] = usePersona();
+  // upload image using trpc
+  const { mutate: upload } = trpc.upload.useMutation();
 
   return (
     <div className="space-y-4">
@@ -69,6 +71,22 @@ export default function MePage() {
       <CreatePersonaForm refetch={() => {}} />
       <PersonaSelector />
       <div>{persona && <p>Selected Persona ID: {persona}</p>}</div>
+      // upload icon
+      <div>
+        <h2 className="text-2xl font-bold">Upload Icon</h2>
+        <input
+          type="file"
+          onChange={async (e) => {
+            if (!persona) return;
+            if (!e.target.files || e.target.files?.length === 0) return;
+            console.log(e.target.files[0]);
+            upload({
+              file: await e.target.files[0].text(),
+              persona_id: persona,
+            });
+          }}
+        />
+      </div>
     </div>
   );
 }

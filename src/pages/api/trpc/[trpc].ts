@@ -2,9 +2,35 @@ import * as trpcNext from "@trpc/server/adapters/next";
 import { z } from "zod";
 import { procedure, router } from "../../../server/trpc";
 import { createContext } from "../../../server/trpc";
-
+import { v4 as uuidv4 } from "uuid";
 // Body
 export const appRouter = router({
+  upload: procedure
+    .input(
+      z.object({
+        file: z.any(),
+        persona_id: z.string(),
+      }),
+    )
+    .mutation(async (opts) => {
+      const filename = uuidv4();
+
+      console.log(opts.input.file.type);
+      const { data, error } = await opts.ctx.supabase.storage
+        .from("images")
+        .upload(filename, opts.input.file, {
+          contentType: opts.input.file.type,
+        });
+      console.log(data, error);
+      const { data: resource, error: resourceError } = await opts.ctx.supabase
+        .from("resources")
+        .insert({
+          path: filename,
+          persona_id: opts.input.persona_id,
+        })
+        .select();
+      return resource;
+    }),
   getBoard: procedure
     .input(
       z.object({
@@ -31,10 +57,15 @@ export const appRouter = router({
                                                                       persona_id,
                                                                       created_at
                                                                     ),
-                                                                    resources (
+                                                                    personas(
                                                                       id,
-                                                                      path
+                                                                      name,
+                                                                      resources(
+                                                                        id,
+                                                                        path
+                                                                      )
                                                                     )
+                                                                    
                                                                   )`,
         )
         .eq("name", opts.input.name);
@@ -61,10 +92,7 @@ export const appRouter = router({
                                                                     persona_id,
                                                                     created_at
                                                                   ),
-                                                                  resources (
-                                                                    id,
-                                                                    path
-                                                                  )`);
+                                                                  `);
     // sort by created_at desc
     if (data)
       data.sort((a, b) => {
