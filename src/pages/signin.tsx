@@ -32,7 +32,13 @@ export default function SignInPage() {
   }, []);
 
   if (!session) {
-    return <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} />;
+    return (
+      <Auth
+        supabaseClient={supabase}
+        appearance={{ theme: ThemeSupa }}
+        providers={[]}
+      />
+    );
   } else {
     document.cookie = "token=";
     document.cookie = "token=" + (session as any).access_token;
