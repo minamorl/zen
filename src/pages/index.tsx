@@ -115,14 +115,14 @@ export default function IndexPage() {
 
               {threadSubmitting && (
                 <li
-                  key="submitting"
+                  key="thread-submitting"
                   className="shadow p-8 m-4 mx-8 rounded opacity-50"
                 >
                   <div>{threadInput}</div>
                 </li>
               )}
               {selectedPost === v.id && (
-                <li key="input" className="shadow p-4 m-4 mx-8 rounded">
+                <li key="thread-input" className="shadow p-4 m-4 mx-8 rounded">
                   <textarea
                     onChange={(e) => setThreadInput(e.currentTarget.value)}
                     value={threadInput}
@@ -130,6 +130,8 @@ export default function IndexPage() {
                   />
                   <button
                     onClick={() => {
+                      setSelectedPost("");
+
                       setThreadSubmitting(true);
                       createThread({
                         raw_text: threadInput,
@@ -137,13 +139,9 @@ export default function IndexPage() {
                         persona_id: persona,
                       });
                       window.setTimeout(() => {
-                        refetch();
-                        window.setTimeout(
-                          () => setThreadSubmitting(false),
-                          500,
-                        );
-                        setThreadInput("");
-                      }, 500);
+                        const r = refetch();
+                        r.then(() => setThreadSubmitting(false));
+                      }, 1000);
                     }}
                     className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full"
                   >
