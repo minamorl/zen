@@ -1,24 +1,22 @@
 import { useForm } from "react-hook-form";
 import { trpc } from "../utils/trpc";
 import { SubmitHandler } from "react-hook-form";
-import { useRouter } from "next/router";
 
 type Inputs = {
   email: string;
   password: string;
 };
-export default function SignInPage() {
+export default function SignUpPage() {
   // react-hook-form
   //
   const { handleSubmit, register } = useForm<Inputs>();
-  const { mutate, error } = trpc.signIn.useMutation();
-  const router = useRouter();
+  const { mutate, error } = trpc.signUp.useMutation();
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
     const r = mutate({
       email: inputs.email,
       password: inputs.password,
     });
-    router.push("/me");
+    console.log(r);
   };
   return (
     <div>
