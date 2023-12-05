@@ -45,12 +45,14 @@ model Persona {
   user    User     @relation(fields: [userId], references: [id])
   posts   Post[]
   threads Thread[]
+  createdAt DateTime @default(now())
 }
 
 model Board {
   id    String @id @default(uuid())
   title String @unique
   posts Post[]
+  createdAt DateTime @default(now())
 }
 
 model Post {
@@ -61,6 +63,7 @@ model Post {
   personaId String
   persona   Persona  @relation(fields: [personaId], references: [id])
   threads   Thread[]
+  createdAt DateTime @default(now())
 }
 
 model Thread {
@@ -70,4 +73,5 @@ model Thread {
   personaId String
   persona   Persona @relation(fields: [personaId], references: [id])
   post      Post    @relation(fields: [postId], references: [id])
+  createdAt DateTime @default(now())
 }
