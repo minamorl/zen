@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { TypeAnimation } from "react-type-animation";
 import { useConsole } from "../context/consoleContext";
 type ConsoleProps = {
-  messages: string[];
+  message: string;
 };
 export const ConsoleUI: React.FC<ConsoleProps> = () => {
   const [message] = useConsole();
