@@ -190,7 +190,19 @@ export const appRouter = router({
       }),
     )
     .mutation(async (opts) => {
-      // WIP
+      // create persona
+      const persona = await opts.ctx.prisma.persona.create({
+        data: {
+          name: opts.input.name,
+          user: {
+            connect: {
+              id: opts.ctx.session.user.userId,
+            },
+          },
+        },
+      });
+      // return personas
+      return persona;
     }),
 });
 export type AppRouter = typeof appRouter;

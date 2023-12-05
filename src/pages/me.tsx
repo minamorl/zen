@@ -41,7 +41,7 @@ const PersonaSelector = () => {
   const [persona, setPersona] = usePersona();
   const { data: personas } = trpc.getPersonas.useQuery();
 
-  const options = personas?.personas?.map((persona) => ({
+  const options = personas?.map((persona) => ({
     value: persona.id,
     label: persona.name,
   }));
