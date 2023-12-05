@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* Your default theme with gradations */
+  --background-light: #f8f9fa; /* Lighter shade for background */
+  --background: #ffffff; /* Default background */
+  --background-dark: #e2e6ea; /* Darker shade for background */
+
+  --foreground-light: #495057; /* Lighter shade for foreground */
+  --foreground: #000000; /* Default foreground */
+  --foreground-dark: #343a40; /* Darker shade for foreground */
+}
+
+[data-theme="dark"] {
+  /* Your dark theme with gradations */
+  --background-light: #343a40; /* Lighter shade for background */
+  --background: #000000; /* Default background */
+  --background-dark: #212529; /* Darker shade for background */
+
+  --foreground-light: #f8f9fa; /* Lighter shade for foreground */
+  --foreground: #ffffff; /* Default foreground */
+  --foreground-dark: #dee2e6; /* Darker shade for foreground */
+}
