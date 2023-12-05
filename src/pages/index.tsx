@@ -16,46 +16,14 @@ type Inputs = {
   raw_text: string;
 };
 
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwaXd4bXRrbXltcWx0ZGZ4b2dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDEyNjk1NzMsImV4cCI6MjAxNjg0NTU3M30.aYkKWGpKvfoOj84p5T4lED0Iy6VXK8yH3Jo0h2kEQMc";
 const DEFAULT_BOARD = "test";
-
-const uppy = new Uppy().use(Tus, {
-  endpoint: `https://spiwxmtkmymqltdfxogg.supabase.co/storage/v1/upload/resumable`,
-  headers: {
-    authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    apikey: SUPABASE_ANON_KEY,
-  },
-  uploadDataDuringCreation: true,
-  chunkSize: 6 * 1024 * 1024,
-  allowedMetaFields: [
-    "bucketName",
-    "objectName",
-    "contentType",
-    "cacheControl",
-  ],
-});
-
-uppy.on("file-added", (file) => {
-  const supabaseMetadata = {
-    bucketName: "images",
-    objectName: file.name,
-    contentType: file.type,
-  };
-
-  file.meta = {
-    ...file.meta,
-    ...supabaseMetadata,
-  };
-
-  console.log("file added", file);
-});
 
 export default function IndexPage() {
   const [persona] = usePersona();
   const { data, isLoading, mutate } = trpc.createPost.useMutation();
   const [key, setKey] = useState("invalid");
   const [submitting, setSubmitting] = useState(false);
+  const [threadSubmitting, setThreadSubmitting] = useState(false);
   const { handleSubmit, register } = useForm<Inputs>();
   const {
     data: board,
@@ -68,18 +36,17 @@ export default function IndexPage() {
   console.log(me);
   const [selectedPost, setSelectedPost] = useState("");
   const { mutate: createThread } = trpc.createThread.useMutation();
-  const { mutate: createResource } = trpc.createResource.useMutation();
 
   const [threadInput, setThreadInput] = useState("");
 
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
     setSubmitting(true);
-    const r = await uppy.upload();
     if (!persona) return;
 
     mutate({
       raw_text: inputs.raw_text,
       persona_id: persona,
+      board_name: DEFAULT_BOARD,
     });
 
     setKey(inputs.raw_text);
@@ -101,14 +68,7 @@ export default function IndexPage() {
       {me && <div>DEBUG: Your persona id is {persona}</div>}
       <div>
         <div className="shadow p-8 m-4 rounded-xl">
-          <h2 className="text-2xl">#{board.name}</h2>
-          <div>{board.description}</div>
-          <div className="text-cyan-800">
-            Created at{" "}
-            {formatDistance(parseISO(board.created_at), new Date(), {
-              addSuffix: true,
-            })}
-          </div>
+          <h2 className="text-2xl">#{board.title}</h2>
 
           <div className="border-t-2 border-gray-200 my-4"></div>
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -122,7 +82,6 @@ export default function IndexPage() {
               type="submit"
               value="Post"
             />
-            {null && <Dashboard uppy={uppy} hideUploadButton />}
           </form>
         </div>
       </div>
@@ -146,36 +105,24 @@ export default function IndexPage() {
                 className="shadow p-8 m-4 rounded cursor-pointer"
                 onClick={() => setSelectedPost(v.id)}
               >
-                {v?.personas?.resources?.[0]?.path && (
-                  <div className="rounded-full w-20">
-                    <img
-                      src={
-                        "https://spiwxmtkmymqltdfxogg.supabase.co/storage/v1/object/public/images/" +
-                        v?.personas?.resources?.[0]?.path
-                      }
-                      className="rounded-full w-20"
-                    />
-                  </div>
-                )}
-                <div>{v.raw_text}</div>
-                <div>
-                  {formatDistance(parseISO(v.created_at), new Date(), {
-                    addSuffix: true,
-                  })}
-                </div>
+                <div>{v.content}</div>
               </li>
               {v.threads.map((x) => (
                 <li key={x.id} className="shadow p-8 m-4 mx-8 rounded">
-                  <div>{x.raw_text}</div>
-                  <div>
-                    {formatDistance(parseISO(x.created_at), new Date(), {
-                      addSuffix: true,
-                    })}
-                  </div>
+                  <div>{x.content}</div>
                 </li>
               ))}
+
+              {threadSubmitting && (
+                <li
+                  key="thread-submitting"
+                  className="shadow p-8 m-4 mx-8 rounded opacity-50"
+                >
+                  <div>{threadInput}</div>
+                </li>
+              )}
               {selectedPost === v.id && (
-                <li key="input" className="shadow p-4 m-4 mx-8 rounded">
+                <li key="thread-input" className="shadow p-4 m-4 mx-8 rounded">
                   <textarea
                     onChange={(e) => setThreadInput(e.currentTarget.value)}
                     value={threadInput}
@@ -183,12 +130,18 @@ export default function IndexPage() {
                   />
                   <button
                     onClick={() => {
+                      setSelectedPost("");
+
+                      setThreadSubmitting(true);
                       createThread({
                         raw_text: threadInput,
                         post_id: v.id,
-                        persona_id: me?.personas?.[0].id ?? "",
+                        persona_id: persona,
                       });
-                      window.setTimeout(() => refetch(), 500);
+                      window.setTimeout(() => {
+                        const r = refetch();
+                        r.then(() => setThreadSubmitting(false));
+                      }, 1000);
                     }}
                     className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full"
                   >

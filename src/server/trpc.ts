@@ -1,18 +1,37 @@
 import { initTRPC } from "@trpc/server";
 import { CreateNextContextOptions } from "@trpc/server/adapters/next";
 
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "./database.types";
+import { PrismaClient } from "@prisma/client";
+import { lucia } from "lucia";
+import { prisma } from "@lucia-auth/adapter-prisma";
+import { web } from "lucia/middleware";
+
+const prismaClient = new PrismaClient();
+
+const auth = lucia({
+  adapter: prisma(prismaClient, {
+    user: "user",
+    key: "key",
+    session: "session",
+  }),
+  env: "DEV",
+  middleware: web(),
+  sessionCookie: {
+    expires: false,
+  },
+});
 
 export const createContext = async ({ req, res }: CreateNextContextOptions) => {
-  const supabaseUrl = "https://spiwxmtkmymqltdfxogg.supabase.co";
-  const supabaseKey = process.env.SUPABASE_KEY;
-  const supabase = createClient<Database>(supabaseUrl, supabaseKey!);
-  const { data: user } = await supabase.auth.getUser(req.cookies.token);
+  const sessionId = auth.readSessionCookie(req.headers.cookie);
+  let session = null;
+  if (sessionId) session = await auth.getSession(sessionId);
+  console.log(session);
 
+  // Use the singleton Prisma client and Lucia auth in the context
   return {
-    supabase,
-    user,
+    prisma: prismaClient,
+    auth,
+    session,
     req,
     res,
   };
