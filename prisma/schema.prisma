@@ -11,31 +11,30 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  personas  Persona[]
-  
-  userKeys   UserKey[]
-  userSessions UserSession[]
+  id           String    @id @unique
+  personas     Persona[]
+
+  auth_session Session[]
+  key          Key[]
 }
 
+model Session {
+  id             String @id @unique
+  user_id        String
+  active_expires BigInt
+  idle_expires   BigInt
+  user           User   @relation(references: [id], fields: [user_id], onDelete: Cascade)
 
-model UserKey {
-  id             String   @id @default(uuid())
-  userId         String
-  hashedPassword String
-  user           User     @relation(fields: [userId], references: [id])
-
-  @@unique([userId])
+  @@index([user_id])
 }
 
-model UserSession {
-  id           String   @id @default(uuid())
-  userId       String
-  activeExpires Int
-  idleExpires  Int
-  user         User     @relation(fields: [userId], references: [id])
+model Key {
+  id              String  @id @unique
+  hashed_password String?
+  user_id         String
+  user            User    @relation(references: [id], fields: [user_id], onDelete: Cascade)
 
-  @@unique([userId])
+  @@index([user_id])
 }
 
 model Persona {
