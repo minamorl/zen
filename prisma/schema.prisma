@@ -13,6 +13,7 @@ datasource db {
 model User {
   id           String    @id @unique
   personas     Persona[]
+  email           String?
 
   auth_session Session[]
   key          Key[]

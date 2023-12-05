@@ -6,11 +6,11 @@ type Inputs = {
   email: string;
   password: string;
 };
-export default function SignInPage() {
+export default function SignUpPage() {
   // react-hook-form
   //
   const { handleSubmit, register } = useForm<Inputs>();
-  const { mutate, error } = trpc.signIn.useMutation();
+  const { mutate, error } = trpc.signUp.useMutation();
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
     const r = mutate({
       email: inputs.email,
