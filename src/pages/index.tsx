@@ -11,6 +11,8 @@ import "@uppy/core/dist/style.min.css";
 import "@uppy/dashboard/dist/style.min.css";
 import { randomUUID } from "crypto";
 import { usePersona } from "../context/personaContext";
+import { ConsoleUI } from "@/console";
+import { useTheme } from "next-themes";
 
 type Inputs = {
   raw_text: string;
@@ -25,6 +27,7 @@ export default function IndexPage() {
   const [submitting, setSubmitting] = useState(false);
   const [threadSubmitting, setThreadSubmitting] = useState(false);
   const { handleSubmit, register } = useForm<Inputs>();
+  const { theme, setTheme } = useTheme();
   const {
     data: board,
     refetch,
@@ -65,7 +68,7 @@ export default function IndexPage() {
   }
   return (
     <div>
-      {me && <div>DEBUG: Your persona id is {persona}</div>}
+      <ConsoleUI />
       <div>
         <div className="shadow p-8 m-4 rounded-xl">
           <h2 className="text-2xl">#{board.title}</h2>
