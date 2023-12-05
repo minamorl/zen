@@ -40,7 +40,7 @@ const CreatePersonaForm: React.FC<{ refetch: () => void }> = ({ refetch }) => {
 const PersonaSelector = (props: {
   options: { value: string; label: string }[];
   persona: string;
-  handleChange: SubmitHandler;
+  handleChange(selectedOption: any): void;
 }) => {
   return (
     <Select
