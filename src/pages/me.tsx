@@ -37,37 +37,44 @@ const CreatePersonaForm: React.FC<{ refetch: () => void }> = ({ refetch }) => {
   );
 };
 
-const PersonaSelector = () => {
-  const [persona, setPersona] = usePersona();
-  const { data: personas } = trpc.getPersonas.useQuery();
-
-  const options = personas?.personas?.map((persona) => ({
-    value: persona.id,
-    label: persona.name,
-  }));
-
-  const handleChange = (selectedOption: any) => {
-    setPersona(selectedOption.value as any);
-  };
-
+const PersonaSelector = (props: {
+  options: { value: string; label: string }[];
+  persona: string;
+  handleChange(selectedOption: any): void;
+}) => {
   return (
     <Select
-      options={options}
-      value={options?.find((option) => option.value === persona)}
-      onChange={handleChange}
+      options={props.options}
+      value={props.options?.find((option) => option.value === props.persona)}
+      onChange={props.handleChange}
       className="text-sm"
     />
   );
 };
 
 export default function MePage() {
-  const [persona] = usePersona();
+  const [persona, setPersona] = usePersona();
+  const { data: personas, refetch } = trpc.getPersonas.useQuery();
+
+  const options =
+    personas?.map((persona) => ({
+      value: persona.id,
+      label: persona.name,
+    })) ?? [];
+
+  const handleChange = (selectedOption: any) => {
+    setPersona(selectedOption.value as any);
+  };
 
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">Switch Your Persona</h2>
-      <CreatePersonaForm refetch={() => {}} />
-      <PersonaSelector />
+      <CreatePersonaForm refetch={refetch} />
+      <PersonaSelector
+        options={options}
+        handleChange={handleChange}
+        persona={persona}
+      />
       <div>{persona && <p>Selected Persona ID: {persona}</p>}</div>
     </div>
   );
