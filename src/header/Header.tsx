@@ -10,7 +10,7 @@ const SignInButton = () => {
 };
 
 export const Header = () => {
-  const [messages] = useConsole();
+  const [message] = useConsole();
   return (
     <header className="w-full m-4 text-2xl sticky top-0">
       <div className="flex">
@@ -21,7 +21,7 @@ export const Header = () => {
         <SignInButton />
       </div>
       <div className="text-white ">
-        <ConsoleUI messages={messages} />
+        <ConsoleUI message={message} />
       </div>
     </header>
   );
