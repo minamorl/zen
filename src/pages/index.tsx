@@ -71,7 +71,7 @@ export default function IndexPage() {
     return <div></div>;
   }
   return (
-    <div className="h-full">
+    <div className="h-full w-full">
       <div>
         <div className="p-8 m-4 rounded-xl bg-gray-700 bg-opacity-75 shadow-2xl">
           <h2 className="text-2xl">#{board.title}</h2>
