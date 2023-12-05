@@ -5,14 +5,17 @@ import { PersonaProvider } from "@/context/personaContext";
 import { ThemeProvider } from "next-themes";
 
 import { Header } from "../header/Header";
+import { ConsoleProvider } from "@/context/consoleContext";
 
 const MyApp: AppType = ({ Component, pageProps }) => {
   return (
     <ThemeProvider defaultTheme="dark">
-      <PersonaProvider>
-        <Header />
-        <Component {...pageProps} />
-      </PersonaProvider>
+      <ConsoleProvider>
+        <PersonaProvider>
+          <Header />
+          <Component {...pageProps} />
+        </PersonaProvider>
+      </ConsoleProvider>
     </ThemeProvider>
   );
 };

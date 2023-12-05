@@ -13,6 +13,7 @@ import { randomUUID } from "crypto";
 import { usePersona } from "../context/personaContext";
 import { ConsoleUI } from "@/console";
 import { useTheme } from "next-themes";
+import { useConsole } from "../context/consoleContext";
 
 type Inputs = {
   raw_text: string;
@@ -41,9 +42,14 @@ export default function IndexPage() {
   const { mutate: createThread } = trpc.createThread.useMutation();
 
   const [threadInput, setThreadInput] = useState("");
+  const [message, setMessage] = useConsole();
+  useEffect(() => {
+    setMessage("Console is starting up...");
+  }, []);
 
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
     setSubmitting(true);
+    setMessage("Submitting post...");
     if (!persona) return;
 
     mutate({
@@ -55,28 +61,25 @@ export default function IndexPage() {
     setKey(inputs.raw_text);
     setTimeout(() => {
       refetch().then(() => setSubmitting(false));
+      setMessage("Correctly submitted post!");
     }, 1000);
   };
 
   if (!board) {
-    return (
-      <div>
-        {me && <div>DEBUG: Your persona id is {persona}</div>}
-        <div> Loading...</div>
-      </div>
-    );
+    setMessage("Loading board...");
+    setMessage(`Your persona id is ${persona}`);
+    return <div></div>;
   }
   return (
-    <div>
-      <ConsoleUI />
+    <div className="h-full">
       <div>
-        <div className="shadow p-8 m-4 rounded-xl">
+        <div className="p-8 m-4 rounded-xl bg-gray-700 bg-opacity-75 shadow-2xl">
           <h2 className="text-2xl">#{board.title}</h2>
 
           <div className="border-t-2 border-gray-200 my-4"></div>
           <form onSubmit={handleSubmit(onSubmit)}>
             <textarea
-              className="rounded border-l-1 border-black w-full h-full resize-none focus:outline-none"
+              className="rounded border-l-1 border-black w-full h-full resize-none focus:outline-none bg-transparent bg-opacity-100 "
               rows={5}
               {...register("raw_text")}
             />
@@ -91,7 +94,10 @@ export default function IndexPage() {
       <div>
         <ul>
           {submitting && (
-            <li key="submitting" className="shadow p-8 m-4 rounded opacity-50">
+            <li
+              key="submitting"
+              className="shadow-2xl p-8 m-4 rounded opacity-50 bg-gray-700 bg-opacity-75"
+            >
               <div>{key}</div>
               <div className="text-cyan-800">
                 Created at{" "}
@@ -105,13 +111,16 @@ export default function IndexPage() {
             <>
               <li
                 key={v.id}
-                className="shadow p-8 m-4 rounded cursor-pointer"
+                className="shadow-2xl p-8 m-4 rounded cursor-pointer bg-gray-700 bg-opacity-75"
                 onClick={() => setSelectedPost(v.id)}
               >
                 <div>{v.content}</div>
               </li>
               {v.threads.map((x) => (
-                <li key={x.id} className="shadow p-8 m-4 mx-8 rounded">
+                <li
+                  key={x.id}
+                  className="shadow-2xl p-8 m-4 mx-8 rounded bg-gray-700 bg-opacity-75"
+                >
                   <div>{x.content}</div>
                 </li>
               ))}
@@ -119,17 +128,20 @@ export default function IndexPage() {
               {threadSubmitting && (
                 <li
                   key="thread-submitting"
-                  className="shadow p-8 m-4 mx-8 rounded opacity-50"
+                  className="shadow-2xl p-8 m-4 mx-8 rounded opacity-50 bg-gray-700 bg-opacity-75"
                 >
                   <div>{threadInput}</div>
                 </li>
               )}
               {selectedPost === v.id && (
-                <li key="thread-input" className="shadow p-4 m-4 mx-8 rounded">
+                <li
+                  key="thread-input"
+                  className="shadow-2xl p-4 m-4 mx-8 rounded bg-gray-700 bg-opacity-75"
+                >
                   <textarea
                     onChange={(e) => setThreadInput(e.currentTarget.value)}
                     value={threadInput}
-                    className="rounded border-l-1 border-black w-full h-full resize-none"
+                    className="rounded border-l-1 border-black w-full h-full resize-none bg-transparent bg-opacity-75"
                   />
                   <button
                     onClick={() => {
