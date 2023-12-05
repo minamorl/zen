@@ -68,11 +68,12 @@ export const appRouter = router({
   getPersonas: procedure.query(async (opts) => {
     // find auth user from session
     const user = opts.ctx.session.user;
+    if (!user.userId) throw new Error("User not found");
     // find personas from user
     const personas = await opts.ctx.prisma.persona.findMany({
       where: {
         user: {
-          id: user.id,
+          id: user.userId,
         },
       },
     });
