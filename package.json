@@ -10,6 +10,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "@prisma/client": "^5.6.0",
     "@react-spring/web": "^9.7.3",
     "@rpldy/uploady": "^1.6.1",
     "@supabase/auth-ui-react": "^0.4.6",
@@ -50,6 +51,7 @@
     "lint-staged": "^15.1.0",
     "postcss": "^8",
     "prettier": "3.1.0",
+    "prisma": "^5.6.0",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"
   },
