@@ -10,8 +10,8 @@ const prismaClient = new PrismaClient();
 const auth = lucia({
   adapter: prisma(prismaClient, {
     user: "user",
-    key: "userKey",
-    session: "userSession",
+    key: "key",
+    session: "session",
   }),
   env: "DEV",
 });
