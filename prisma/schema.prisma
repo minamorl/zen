@@ -12,9 +12,30 @@ datasource db {
 
 model User {
   id        String    @id @default(uuid())
-  email     String    @unique
-  password  String
   personas  Persona[]
+  
+  userKeys   UserKey[]
+  userSessions UserSession[]
+}
+
+
+model UserKey {
+  id             String   @id @default(uuid())
+  userId         String
+  hashedPassword String
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId])
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       String
+  activeExpires Int
+  idleExpires  Int
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId])
 }
 
 model Persona {
