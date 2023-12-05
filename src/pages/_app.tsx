@@ -6,10 +6,14 @@ import { ThemeProvider } from "next-themes";
 
 import { Header } from "../header/Header";
 import { ConsoleProvider } from "@/context/consoleContext";
+import Head from "next/head";
 
 const MyApp: AppType = ({ Component, pageProps }) => {
   return (
     <ThemeProvider defaultTheme="dark">
+      <Head>
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+      </Head>
       <ConsoleProvider>
         <PersonaProvider>
           <Header />
