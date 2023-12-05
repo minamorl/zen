@@ -23,6 +23,7 @@ export default function IndexPage() {
   const { data, isLoading, mutate } = trpc.createPost.useMutation();
   const [key, setKey] = useState("invalid");
   const [submitting, setSubmitting] = useState(false);
+  const [threadSubmitting, setThreadSubmitting] = useState(false);
   const { handleSubmit, register } = useForm<Inputs>();
   const {
     data: board,
@@ -111,6 +112,15 @@ export default function IndexPage() {
                   <div>{x.content}</div>
                 </li>
               ))}
+
+              {threadSubmitting && (
+                <li
+                  key="submitting"
+                  className="shadow p-8 m-4 mx-8 rounded opacity-50"
+                >
+                  <div>{threadInput}</div>
+                </li>
+              )}
               {selectedPost === v.id && (
                 <li key="input" className="shadow p-4 m-4 mx-8 rounded">
                   <textarea
@@ -120,12 +130,20 @@ export default function IndexPage() {
                   />
                   <button
                     onClick={() => {
-                      // createThread({
-                      //   raw_text: threadInput,
-                      //   post_id: v.id,
-                      //   persona_id: me?.personas?.[0].id ?? "",
-                      // });
-                      window.setTimeout(() => refetch(), 500);
+                      setThreadSubmitting(true);
+                      createThread({
+                        raw_text: threadInput,
+                        post_id: v.id,
+                        persona_id: persona,
+                      });
+                      window.setTimeout(() => {
+                        refetch();
+                        window.setTimeout(
+                          () => setThreadSubmitting(false),
+                          500,
+                        );
+                        setThreadInput("");
+                      }, 500);
                     }}
                     className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full"
                   >

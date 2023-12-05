@@ -11,9 +11,9 @@ datasource db {
 }
 
 model User {
-  id           String    @id @unique
-  personas     Persona[]
-  email           String?
+  id       String    @id @unique
+  personas Persona[]
+  email    String?
 
   auth_session Session[]
   key          Key[]
@@ -39,32 +39,35 @@ model Key {
 }
 
 model Persona {
-  id        String    @id @default(uuid())
-  name      String
-  userId    String
-  user      User      @relation(fields: [userId], references: [id])
-  posts     Post[]
+  id      String   @id @default(uuid())
+  name    String
+  userId  String
+  user    User     @relation(fields: [userId], references: [id])
+  posts   Post[]
+  threads Thread[]
 }
 
 model Board {
-  id        String    @id @default(uuid())
-  title     String    @unique
-  posts     Post[]
+  id    String @id @default(uuid())
+  title String @unique
+  posts Post[]
 }
 
 model Post {
-  id         String    @id @default(uuid())
-  boardId    String
-  board      Board     @relation(fields: [boardId], references: [id])
-  content    String    @db.Text
-  personaId  String
-  persona    Persona   @relation(fields: [personaId], references: [id])
-  threads    Thread[]
+  id        String   @id @default(uuid())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id])
+  content   String   @db.Text
+  personaId String
+  persona   Persona  @relation(fields: [personaId], references: [id])
+  threads   Thread[]
 }
 
 model Thread {
-  id        String    @id @default(uuid())
-  content   String    @db.Text
+  id        String  @id @default(uuid())
+  content   String  @db.Text
   postId    String
-  post      Post      @relation(fields: [postId], references: [id])
+  personaId String
+  persona   Persona @relation(fields: [personaId], references: [id])
+  post      Post    @relation(fields: [postId], references: [id])
 }

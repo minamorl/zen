@@ -162,16 +162,6 @@ export const appRouter = router({
       }
     }),
 
-  createUser: procedure
-    .input(
-      z.object({
-        email: z.string(),
-        password: z.string(),
-      }),
-    )
-    .query(async (opts) => {
-      // WIP
-    }),
   createThread: procedure
     .input(
       z.object({
@@ -181,7 +171,21 @@ export const appRouter = router({
       }),
     )
     .mutation(async (opts) => {
-      // WIP
+      return await opts.ctx.prisma.thread.create({
+        data: {
+          post: {
+            connect: {
+              id: opts.input.post_id,
+            },
+          },
+          persona: {
+            connect: {
+              id: opts.input.persona_id,
+            },
+          },
+          content: opts.input.raw_text,
+        },
+      });
     }),
   createPersona: procedure
     .input(
