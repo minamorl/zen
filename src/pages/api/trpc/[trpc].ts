@@ -14,7 +14,7 @@ export const appRouter = router({
       }),
     )
     .query(async (opts) => {
-      // find or create board
+      // find or create board, order by created_at desc
       const board = await opts.ctx.prisma.board.upsert({
         where: {
           title: opts.input.name,
@@ -25,6 +25,9 @@ export const appRouter = router({
         update: {},
         include: {
           posts: {
+            orderBy: {
+              createdAt: "desc",
+            },
             include: {
               threads: true,
               persona: true,
