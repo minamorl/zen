@@ -119,9 +119,9 @@ export default function IndexPage() {
   if (!board) {
     // loading animation
     return (
-      <div className="h-full w-full">
+      <div>
         <Title boardName={boardName} setBoardName={setBoardName} />
-        <div className="p-8 m-4 rounded-xl bg-gray-700 h-12 w-full bg-opacity-75 shadow-2xl animate-pulse" />
+        <div className="p-8 m-4 rounded-xl bg-gray-700 h-12 bg-opacity-75 shadow-2xl animate-pulse" />
       </div>
     );
   }
