@@ -15,7 +15,7 @@ export const appRouter = router({
     )
     .query(async (opts) => {
       // find or create board, order by created_at desc
-      const board = await opts.ctx.prisma.board.findUniqueOrThrow({
+      const board = await opts.ctx.prisma.board.findUnique({
         where: {
           title: opts.input.name,
         },
