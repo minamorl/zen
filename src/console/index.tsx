@@ -8,9 +8,11 @@ export const ConsoleUI: React.FC<ConsoleProps> = () => {
   const [message] = useConsole();
 
   return (
-    <div className="text-sm">
-      <div className="h-28 flex flex-row">
+    <div className="text-sm font-mono">
+      <div className="flex flex-row">
+        <div className="block w-6">⚡</div>
         <div className="block">{message}</div>
+        <div className="block animate-ping">_</div>
       </div>
     </div>
   );

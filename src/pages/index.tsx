@@ -44,7 +44,7 @@ export default function IndexPage() {
   const [threadInput, setThreadInput] = useState("");
   const [message, setMessage] = useConsole();
   useEffect(() => {
-    setMessage("Console is starting up...");
+    setMessage("Welcome to zen!");
   }, []);
 
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
