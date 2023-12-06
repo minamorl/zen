@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { trpc } from "../utils/trpc";
 import { SubmitHandler, useForm } from "react-hook-form";
 import Link from "next/link";
-import { format, formatDistance, parseISO } from "date-fns";
+import {
+  format,
+  formatDistance,
+  formatDistanceToNow,
+  parseISO,
+} from "date-fns";
 import Uppy from "@uppy/core";
 import { Dashboard } from "@uppy/react";
 import Tus from "@uppy/tus";
@@ -44,7 +49,7 @@ export default function IndexPage() {
   const [threadInput, setThreadInput] = useState("");
   const [message, setMessage] = useConsole();
   useEffect(() => {
-    setMessage("Welcome to zen!");
+    setMessage("Welcome to zen! You are in board #" + DEFAULT_BOARD + "!");
   }, []);
 
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
@@ -74,7 +79,6 @@ export default function IndexPage() {
         <div className="p-8 m-4 rounded-xl bg-gray-700 bg-opacity-75 shadow-2xl">
           <h2 className="text-2xl">#{board.title}</h2>
 
-          <div className="border-t-2 border-gray-200 my-4"></div>
           <form onSubmit={handleSubmit(onSubmit)}>
             <textarea
               className="rounded border-l-1 border-black w-full h-full resize-none focus:outline-none bg-transparent bg-opacity-100 "
@@ -97,7 +101,7 @@ export default function IndexPage() {
               className="shadow-2xl p-8 m-4 rounded opacity-50 bg-gray-700 bg-opacity-75"
             >
               <div>{key}</div>
-              <div className="text-cyan-800">
+              <div className="text-cyan-200">
                 Created at{" "}
                 {formatDistance(Date.now(), new Date(), {
                   addSuffix: true,
@@ -113,6 +117,12 @@ export default function IndexPage() {
                 onClick={() => setSelectedPost(v.id)}
               >
                 <div>{v.content}</div>
+                <div className="text-cyan-200">
+                  Created at{" "}
+                  {formatDistanceToNow(parseISO(v.createdAt), {
+                    addSuffix: true,
+                  })}
+                </div>
               </li>
               {v.threads.map((x) => (
                 <li
@@ -120,6 +130,12 @@ export default function IndexPage() {
                   className="shadow-2xl p-8 m-4 mx-8 rounded bg-gray-700 bg-opacity-75"
                 >
                   <div>{x.content}</div>
+                  <div className="text-cyan-200">
+                    Created at{" "}
+                    {formatDistanceToNow(parseISO(v.createdAt), {
+                      addSuffix: true,
+                    })}
+                  </div>
                 </li>
               ))}
               {threadSubmitting && (
