@@ -19,7 +19,7 @@ import { usePersona } from "../context/personaContext";
 import { ConsoleUI } from "@/console";
 import { useTheme } from "next-themes";
 import { useConsole } from "../context/consoleContext";
-import { GoCommandPalette, GoFileDirectory, IconName } from "react-icons/go";
+import { GoCommandPalette } from "react-icons/go";
 type Inputs = {
   raw_text: string;
 };
