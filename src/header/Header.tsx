@@ -14,7 +14,7 @@ const SignInButton = () => {
 export const Header = () => {
   const [message] = useConsole();
   return (
-    <header className="w-full m-4 text-2xl sticky top-0">
+    <header className="w-full ml-4 text-2xl sticky top-0">
       <div className="flex">
         <h1 className="flex-none mr-8 w-6 font-extrabold display-block">
           <Link href="/">zen</Link>

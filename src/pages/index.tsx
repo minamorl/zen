@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { SetStateAction, useEffect, useState, Dispatch } from "react";
 import { trpc } from "../utils/trpc";
 import { SubmitHandler, useForm } from "react-hook-form";
 import Link from "next/link";
@@ -19,14 +19,39 @@ import { usePersona } from "../context/personaContext";
 import { ConsoleUI } from "@/console";
 import { useTheme } from "next-themes";
 import { useConsole } from "../context/consoleContext";
-
+import { GoCommandPalette } from "react-icons/go";
 type Inputs = {
   raw_text: string;
 };
 
 const DEFAULT_BOARD = "test";
 
+const Title = ({
+  boardName,
+  setBoardName,
+}: {
+  boardName: string;
+  setBoardName: Dispatch<SetStateAction<string>>;
+}) => {
+  const [value, setValue] = useState(boardName);
+  return (
+    <div className="ml-4 border-gray-800 border-l-1 font-mono">
+      <GoCommandPalette className="inline-block mr-2 " />
+      <input
+        className="bg-transparent border-none focus:outline-none"
+        value={value}
+        onChange={(e) => {
+          const value = e.currentTarget.value;
+          setValue(value);
+          setBoardName(value);
+        }}
+      />
+    </div>
+  );
+};
+
 export default function IndexPage() {
+  const [boardName, setBoardName] = useState(DEFAULT_BOARD);
   const [persona] = usePersona();
   const { data, isLoading, mutate } = trpc.createPost.useMutation();
   const [key, setKey] = useState("invalid");
@@ -38,8 +63,9 @@ export default function IndexPage() {
     data: board,
     refetch,
     isRefetching,
+    error: boardFetchError,
   } = trpc.getBoard.useQuery({
-    name: "test",
+    name: boardName,
   });
   const [selectedPost, setSelectedPost] = useState("");
   const { mutate: createThread } = trpc.createThread.useMutation();
@@ -47,7 +73,7 @@ export default function IndexPage() {
   const [threadInput, setThreadInput] = useState("");
   const [message, setMessage] = useConsole();
   useEffect(() => {
-    setMessage("Welcome to zen! You are in board #" + DEFAULT_BOARD + "!");
+    setMessage("Welcome to zen! You are in board #" + boardName + "!");
   }, []);
 
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
@@ -58,7 +84,7 @@ export default function IndexPage() {
     mutate({
       raw_text: inputs.raw_text,
       persona_id: persona,
-      board_name: DEFAULT_BOARD,
+      board_name: boardName,
     });
 
     setKey(inputs.raw_text);
@@ -67,12 +93,38 @@ export default function IndexPage() {
       setMessage("Correctly submitted post!");
     }, 1000);
   };
+  const { mutate: createBoard } = trpc.createBoard.useMutation();
+  if (boardFetchError) {
+    return (
+      <div className="h-full w-full">
+        <Title boardName={boardName} setBoardName={setBoardName} />
+        <div>
+          This board does not exist. Do you want to create it?
+          <button
+            onClick={() => {
+              createBoard({ name: boardName });
+              refetch();
+            }}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full"
+          >
+            Create
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!board) {
-    return <div></div>;
+    return (
+      <div className="h-full w-full">
+        <Title boardName={boardName} setBoardName={setBoardName} />
+        board is loading
+      </div>
+    );
   }
   return (
     <div className="h-full w-full">
+      <Title boardName={boardName} setBoardName={setBoardName} />
       <div>
         <div
           className="p-8 m-4 rounded-xl bg-gray-700 bg-opacity-75 shadow-2xl"
@@ -85,8 +137,6 @@ export default function IndexPage() {
             }
           }}
         >
-          <h2 className="text-2xl">#{board.title}</h2>
-
           <form onSubmit={handleSubmit(onSubmit)}>
             <textarea
               className="rounded border-l-1 border-black w-full h-full resize-none focus:outline-none bg-transparent bg-opacity-100 "
