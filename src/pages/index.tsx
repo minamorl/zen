@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { trpc } from "../utils/trpc";
 import { SubmitHandler, useForm } from "react-hook-form";
 import Link from "next/link";
-import { format, formatDistance, parseISO } from "date-fns";
+import {
+  format,
+  formatDistance,
+  formatDistanceToNow,
+  parseISO,
+} from "date-fns";
 import Uppy from "@uppy/core";
 import { Dashboard } from "@uppy/react";
 import Tus from "@uppy/tus";
@@ -44,7 +49,7 @@ export default function IndexPage() {
   const [threadInput, setThreadInput] = useState("");
   const [message, setMessage] = useConsole();
   useEffect(() => {
-    setMessage("Console is starting up...");
+    setMessage("Welcome to zen! You are in board #" + DEFAULT_BOARD + "!");
   }, []);
 
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
@@ -66,8 +71,6 @@ export default function IndexPage() {
   };
 
   if (!board) {
-    setMessage("Loading board...");
-    setMessage(`Your persona id is ${persona}`);
     return <div></div>;
   }
   return (
@@ -76,7 +79,6 @@ export default function IndexPage() {
         <div className="p-8 m-4 rounded-xl bg-gray-700 bg-opacity-75 shadow-2xl">
           <h2 className="text-2xl">#{board.title}</h2>
 
-          <div className="border-t-2 border-gray-200 my-4"></div>
           <form onSubmit={handleSubmit(onSubmit)}>
             <textarea
               className="rounded border-l-1 border-black w-full h-full resize-none focus:outline-none bg-transparent bg-opacity-100 "
@@ -95,11 +97,11 @@ export default function IndexPage() {
         <ul>
           {submitting && (
             <li
-              key="submitting"
+              key="post-submitting"
               className="shadow-2xl p-8 m-4 rounded opacity-50 bg-gray-700 bg-opacity-75"
             >
               <div>{key}</div>
-              <div className="text-cyan-800">
+              <div className="text-cyan-200">
                 Created at{" "}
                 {formatDistance(Date.now(), new Date(), {
                   addSuffix: true,
@@ -108,23 +110,34 @@ export default function IndexPage() {
             </li>
           )}
           {board.posts.map((v) => (
-            <>
+            <div key={v.id}>
               <li
-                key={v.id}
+                key={"post-" + v.id}
                 className="shadow-2xl p-8 m-4 rounded cursor-pointer bg-gray-700 bg-opacity-75"
                 onClick={() => setSelectedPost(v.id)}
               >
                 <div>{v.content}</div>
+                <div className="text-cyan-200">
+                  Created at{" "}
+                  {formatDistanceToNow(parseISO(v.createdAt), {
+                    addSuffix: true,
+                  })}
+                </div>
               </li>
               {v.threads.map((x) => (
                 <li
-                  key={x.id}
+                  key={"thread-" + x.id}
                   className="shadow-2xl p-8 m-4 mx-8 rounded bg-gray-700 bg-opacity-75"
                 >
                   <div>{x.content}</div>
+                  <div className="text-cyan-200">
+                    Created at{" "}
+                    {formatDistanceToNow(parseISO(v.createdAt), {
+                      addSuffix: true,
+                    })}
+                  </div>
                 </li>
               ))}
-
               {threadSubmitting && (
                 <li
                   key="thread-submitting"
@@ -164,7 +177,7 @@ export default function IndexPage() {
                   </button>
                 </li>
               )}
-            </>
+            </div>
           ))}
         </ul>
       </div>
