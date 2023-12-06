@@ -41,8 +41,6 @@ export default function IndexPage() {
   } = trpc.getBoard.useQuery({
     name: "test",
   });
-  const { data: me } = trpc.getPersonas.useQuery();
-  console.log(me);
   const [selectedPost, setSelectedPost] = useState("");
   const { mutate: createThread } = trpc.createThread.useMutation();
 
@@ -76,7 +74,17 @@ export default function IndexPage() {
   return (
     <div className="h-full w-full">
       <div>
-        <div className="p-8 m-4 rounded-xl bg-gray-700 bg-opacity-75 shadow-2xl">
+        <div
+          className="p-8 m-4 rounded-xl bg-gray-700 bg-opacity-75 shadow-2xl"
+          onMouseOver={() => {
+            persona || setMessage("Please log in first to post.");
+          }}
+          onKeyDown={(e) => {
+            if (e.ctrlKey && e.key === "Enter") {
+              handleSubmit(onSubmit)();
+            }
+          }}
+        >
           <h2 className="text-2xl">#{board.title}</h2>
 
           <form onSubmit={handleSubmit(onSubmit)}>
