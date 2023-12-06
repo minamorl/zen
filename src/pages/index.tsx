@@ -66,8 +66,6 @@ export default function IndexPage() {
   };
 
   if (!board) {
-    setMessage("Loading board...");
-    setMessage(`Your persona id is ${persona}`);
     return <div></div>;
   }
   return (
@@ -95,7 +93,7 @@ export default function IndexPage() {
         <ul>
           {submitting && (
             <li
-              key="submitting"
+              key="post-submitting"
               className="shadow-2xl p-8 m-4 rounded opacity-50 bg-gray-700 bg-opacity-75"
             >
               <div>{key}</div>
@@ -108,9 +106,9 @@ export default function IndexPage() {
             </li>
           )}
           {board.posts.map((v) => (
-            <>
+            <div key={v.id}>
               <li
-                key={v.id}
+                key={"post-" + v.id}
                 className="shadow-2xl p-8 m-4 rounded cursor-pointer bg-gray-700 bg-opacity-75"
                 onClick={() => setSelectedPost(v.id)}
               >
@@ -118,13 +116,12 @@ export default function IndexPage() {
               </li>
               {v.threads.map((x) => (
                 <li
-                  key={x.id}
+                  key={"thread-" + x.id}
                   className="shadow-2xl p-8 m-4 mx-8 rounded bg-gray-700 bg-opacity-75"
                 >
                   <div>{x.content}</div>
                 </li>
               ))}
-
               {threadSubmitting && (
                 <li
                   key="thread-submitting"
@@ -164,7 +161,7 @@ export default function IndexPage() {
                   </button>
                 </li>
               )}
-            </>
+            </div>
           ))}
         </ul>
       </div>
