@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import Select from "react-select";
 import { usePersona } from "../context/personaContext"; // Adjust the import path as needed
 import { trpc } from "../utils/trpc";
+import { useConsole } from "../context/consoleContext";
 
 type Inputs = {
   name: string;
@@ -55,6 +56,11 @@ const PersonaSelector = (props: {
 export default function MePage() {
   const [persona, setPersona] = usePersona();
   const { data: personas, refetch } = trpc.getPersonas.useQuery();
+  const [message, setMessage] = useConsole();
+  useEffect(() => {
+    setMessage("You can switch your persona here");
+  }),
+    [];
 
   const options =
     personas?.map((persona) => ({

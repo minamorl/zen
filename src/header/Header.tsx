@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { ConsoleUI } from "@/console";
+import { usePersona } from "../context/personaContext";
 import { useConsole } from "../context/consoleContext";
 const SignInButton = () => {
+  const [persona] = usePersona();
   return (
     <div className="flex-none self-start w-24 text-white bg-blue-600">
-      <Link href={"/signin"}>Sign In</Link>
+      {persona === "" ? <Link href={"/signup"}>Sign Up</Link> : <div></div>}
     </div>
   );
 };
