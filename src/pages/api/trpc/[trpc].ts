@@ -15,14 +15,10 @@ export const appRouter = router({
     )
     .query(async (opts) => {
       // find or create board, order by created_at desc
-      const board = await opts.ctx.prisma.board.upsert({
+      const board = await opts.ctx.prisma.board.findUniqueOrThrow({
         where: {
           title: opts.input.name,
         },
-        create: {
-          title: opts.input.name,
-        },
-        update: {},
         include: {
           posts: {
             orderBy: {
@@ -33,6 +29,21 @@ export const appRouter = router({
               persona: true,
             },
           },
+        },
+      });
+      return board;
+    }),
+  createBoard: procedure
+    .input(
+      z.object({
+        name: z.string(),
+      }),
+    )
+    .mutation(async (opts) => {
+      // create board
+      const board = await opts.ctx.prisma.board.create({
+        data: {
+          title: opts.input.name,
         },
       });
       return board;
