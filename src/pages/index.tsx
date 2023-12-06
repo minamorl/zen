@@ -62,7 +62,7 @@ export default function IndexPage() {
   const {
     data: board,
     refetch,
-    isRefetching,
+    isLoading: boardLoading,
     error: boardFetchError,
   } = trpc.getBoard.useQuery({
     name: boardName,
@@ -73,8 +73,11 @@ export default function IndexPage() {
   const [threadInput, setThreadInput] = useState("");
   const [message, setMessage] = useConsole();
   useEffect(() => {
-    setMessage("Welcome to zen! You are in board #" + boardName + "!");
+    setMessage("Welcome to zen!");
   }, []);
+  useEffect(() => {
+    setMessage("You are in #" + boardName + "!");
+  }, [boardName]);
 
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
     setSubmitting(true);
@@ -94,7 +97,7 @@ export default function IndexPage() {
     }, 1000);
   };
   const { mutate: createBoard } = trpc.createBoard.useMutation();
-  if (boardFetchError) {
+  if (!board && !boardLoading) {
     return (
       <div className="h-full w-full">
         <Title boardName={boardName} setBoardName={setBoardName} />
@@ -113,12 +116,12 @@ export default function IndexPage() {
       </div>
     );
   }
-
   if (!board) {
+    // loading animation
     return (
       <div className="h-full w-full">
         <Title boardName={boardName} setBoardName={setBoardName} />
-        board is loading
+        <div className="p-8 m-4 rounded-xl bg-gray-700 h-12 w-full bg-opacity-75 shadow-2xl animate-pulse" />
       </div>
     );
   }
