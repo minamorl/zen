@@ -5,8 +5,37 @@ import { createContext } from "../../../server/trpc";
 import { v4 as uuidv4 } from "uuid";
 import { LuciaError } from "lucia";
 import { TRPCError } from "@trpc/server";
+import { S3 } from "aws-sdk";
 // Body
 export const appRouter = router({
+  getPresignedUrl: procedure
+    .input(
+      z.object({
+        filename: z.string(),
+        filetype: z.string(),
+      }),
+    )
+    .mutation(async (opts) => {
+      // s3 presigned url
+      const s3 = new S3({
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        endpoint: "s3.ap-northeast-1.wasabisys.com", // Use the appropriate Wasabi endpoint
+        region: "ap-northeast-1", // Use the appropriate Wasabi region
+      });
+      console.log(process.env.AWS_ACCESS_KEY_ID);
+      console.log(process.env.AWS_SECRET_ACCESS_KEY);
+      const presignedUrl = await s3.getSignedUrlPromise("putObject", {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: uuidv4(),
+        Expires: 60 * 5, // 5 minutes
+        ContentType: opts.input.filetype,
+        ACL: "public-read",
+      });
+      // store it to db
+
+      return presignedUrl;
+    }),
   getBoard: procedure
     .input(
       z.object({

@@ -46,6 +46,7 @@ model Persona {
   posts   Post[]
   threads Thread[]
   createdAt DateTime @default(now())
+  resource PersonaResource?
 }
 
 model Board {
@@ -64,6 +65,7 @@ model Post {
   persona   Persona  @relation(fields: [personaId], references: [id])
   threads   Thread[]
   createdAt DateTime @default(now())
+  resources PostResource[]
 }
 
 model Thread {
@@ -73,5 +75,23 @@ model Thread {
   personaId String
   persona   Persona @relation(fields: [personaId], references: [id])
   post      Post    @relation(fields: [postId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+
+model PostResource {
+  id        String   @id @default(uuid())
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  imagePath String
+  createdAt DateTime @default(now())
+}
+
+
+model PersonaResource {
+  id        String   @id @default(uuid())
+  persona   Persona  @relation(fields: [personaId], references: [id])
+  personaId String   @unique
+  imagePath String
   createdAt DateTime @default(now())
 }

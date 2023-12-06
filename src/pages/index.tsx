@@ -79,6 +79,23 @@ export default function IndexPage() {
     setMessage("You are in #" + boardName + "!");
   }, [boardName]);
 
+  const { mutate: getPresignedUrl, data: presignedUrl } =
+    trpc.getPresignedUrl.useMutation();
+  const uploadFile = async (file: File) => {
+    getPresignedUrl({
+      filename: file.name,
+      filetype: file.type,
+    });
+    const options = {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type,
+      },
+      body: file,
+    };
+    console.log(presignedUrl);
+    if (presignedUrl) await fetch(presignedUrl, options);
+  };
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
     setSubmitting(true);
     setMessage("Submitting post...");
@@ -150,6 +167,15 @@ export default function IndexPage() {
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full"
               type="submit"
               value="Post"
+            />
+            <input
+              type="file"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  uploadFile(file);
+                }
+              }}
             />
           </form>
         </div>
