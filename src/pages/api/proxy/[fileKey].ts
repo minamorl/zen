@@ -1,7 +1,11 @@
 // pages/api/proxy/[fileKey].js
 import { S3 } from "aws-sdk";
+import { NextApiRequest, NextApiResponse } from "next";
 
-export default async function handler(req, res) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   const { fileKey } = req.query;
 
   // Initialize S3 with Wasabi credentials
@@ -18,7 +22,7 @@ export default async function handler(req, res) {
     const fileStream = s3
       .getObject({
         Bucket: process.env.AWS_BUCKET_NAME!,
-        Key: fileKey,
+        Key: fileKey?.toString()!,
       })
       .createReadStream();
 

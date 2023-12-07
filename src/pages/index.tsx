@@ -93,8 +93,7 @@ export default function IndexPage() {
       },
       body: file,
     };
-    console.log(presignedUrl);
-    if (presignedUrl) await fetch(presignedUrl, options);
+    if (presignedUrl) await fetch(presignedUrl.presignedUrl, options);
   };
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
     setSubmitting(true);
@@ -105,6 +104,7 @@ export default function IndexPage() {
       raw_text: inputs.raw_text,
       persona_id: persona,
       board_name: boardName,
+      resource_key: presignedUrl?.fileKey,
     });
 
     setKey(inputs.raw_text);
@@ -171,7 +171,7 @@ export default function IndexPage() {
             <input
               type="file"
               onChange={(e) => {
-                const file = e.target.files[0];
+                const file = e.target.files?.[0];
                 if (file) {
                   uploadFile(file);
                 }
@@ -205,6 +205,12 @@ export default function IndexPage() {
               >
                 <div>{v.content}</div>
                 <div className="text-cyan-200">
+                  {v.resources.map((v) => {
+                    console.log(v);
+                    return (
+                      <img src={"/api/proxy/" + v.imagePath} width={100} />
+                    );
+                  })}
                   Created at{" "}
                   {formatDistanceToNow(parseISO(v.createdAt), {
                     addSuffix: true,

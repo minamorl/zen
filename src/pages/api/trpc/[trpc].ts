@@ -25,16 +25,19 @@ export const appRouter = router({
       });
       console.log(process.env.AWS_ACCESS_KEY_ID);
       console.log(process.env.AWS_SECRET_ACCESS_KEY);
+      const key = uuidv4();
       const presignedUrl = await s3.getSignedUrlPromise("putObject", {
         Bucket: process.env.AWS_BUCKET_NAME,
-        Key: uuidv4(),
+        Key: key,
         Expires: 60 * 5, // 5 minutes
         ContentType: opts.input.filetype,
         ACL: "public-read",
       });
-      // store it to db
 
-      return presignedUrl;
+      return {
+        presignedUrl,
+        fileKey: key,
+      };
     }),
   getBoard: procedure
     .input(
@@ -56,10 +59,12 @@ export const appRouter = router({
             include: {
               threads: true,
               persona: true,
+              resources: true,
             },
           },
         },
       });
+      console.log(board);
       return board;
     }),
   createBoard: procedure
@@ -83,6 +88,7 @@ export const appRouter = router({
         persona_id: z.string(),
         raw_text: z.string(),
         board_name: z.string(),
+        resource_key: z.string().optional(),
       }),
     )
     .mutation(async (opts) => {
@@ -94,6 +100,13 @@ export const appRouter = router({
               id: opts.input.persona_id,
             },
           },
+          resources: opts.input.resource_key
+            ? {
+                create: {
+                  imagePath: opts.input.resource_key,
+                },
+              }
+            : undefined,
           content: opts.input.raw_text,
           board: {
             connect: {
