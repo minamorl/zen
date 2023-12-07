@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 const SignInButton = () => {
   const [persona] = usePersona();
   return (
-    <button className="p-1 text-white bg-blue-600 text-[1rem]">
+    <button className="rounded px-2 py-1 text-white bg-blue-600 text-[1rem] hover:bg-blue-700">
       {persona === "" ? <Link href={"/signup"}>Sign Up</Link> : <div></div>}
     </button>
   );
@@ -28,7 +28,7 @@ export const Header = () => {
   }, [theme]);
 
   return (
-    <header className={`px-4 pb-2 text-2xl sticky top-0 bg-${headerBg}`}>
+    <header className={`px-4 py-2 text-2xl sticky top-0 bg-${headerBg}`}>
       <div className="flex items-center">
         <h1 className="flex-none mr-8 w-6 font-extrabold display-block">
           <Link href="/">zen</Link>
