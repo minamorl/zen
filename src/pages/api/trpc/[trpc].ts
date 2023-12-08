@@ -11,6 +11,7 @@ export const appRouter = router({
     .input(
       z.object({
         name: z.string(),
+        lastTimeFetched: z.number().optional(),
       }),
     )
     .query(async (opts) => {
@@ -21,6 +22,14 @@ export const appRouter = router({
         },
         include: {
           posts: {
+            where: {
+              createdAt: opts.input.lastTimeFetched
+                ? {
+                    gt: new Date(opts.input.lastTimeFetched),
+                  }
+                : undefined,
+            },
+            take: 10,
             orderBy: {
               createdAt: "desc",
             },
@@ -31,6 +40,7 @@ export const appRouter = router({
           },
         },
       });
+      console.log(board);
       return board;
     }),
   createBoard: procedure
