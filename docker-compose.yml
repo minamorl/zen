@@ -8,6 +8,10 @@ services:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/mydb
     depends_on:
       - db
+    volumes:
+      - ./src/:/app/src
+      - ./public/:/app/public
+      - ./prisma/:/app/prisma
   db:
     image: postgres
     ports:
