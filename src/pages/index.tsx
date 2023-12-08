@@ -92,6 +92,7 @@ export default function IndexPage() {
   useEffect(() => {
     setMessage("You are in #" + boardName + "!");
     setLastTimeFetched(undefined);
+    setBoard(undefined);
   }, [boardName]);
 
   useEffect(() => {
