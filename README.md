@@ -11,11 +11,19 @@
 
 Welcome to zen, a cutting-edge social web platform designed to connect and empower communities.
 
+## Principles
+
+Zen is code-first. Always functioning code is correct, and everything else will follow. We prioritize release over maintenance.
+
+The spirit of fixing things on your own is at the heart of Zen.
+
+We leave the responsibility of maintaining data persistence not to the server side but to the users. In other words, we make no guarantees about the data.
+
 ## Getting Started
 
 ### Prerequisites
 
-- PostgreSQL Database
+- Docker compose
 
 ### Installation
 
@@ -27,30 +35,19 @@ git clone https://github.com/minamorl/zen.git
 
 ```
 
-Install dependencies:
+Run the following command
 
 ```bash
-
-cd zen
-npm install
-
+docker compose up
 ```
 
-Generate Prisma client:
+You need to execute migration first. So open a new terminal and run:
 
 ```bash
-
- npx prisma generate
-
+docker compose run web npx prisma migrate dev
 ```
 
-Then, run a server:
-
-```bash
-
-npm run dev
-
-```
+Then access to `localhost:3000`! Yay!
 
 ## Site
 
