@@ -84,8 +84,8 @@ export default function IndexPage() {
   const [message, setMessage] = useConsole();
   useEffect(() => {
     const interval = setInterval(() => {
-      // 3 seconds ago
-      setLastTimeFetched(Date.now() - 3000);
+      // 6 seconds ago for resolving delay
+      setLastTimeFetched(Date.now() - 6000);
     }, 3000);
     return () => clearInterval(interval);
   }, []);
