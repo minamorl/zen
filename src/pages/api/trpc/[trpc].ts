@@ -94,8 +94,8 @@ export const appRouter = router({
   signUp: procedure
     .input(
       z.object({
-        email: z.string(),
-        password: z.string(),
+        email: z.string().email(),
+        password: z.string().min(8),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -134,8 +134,8 @@ export const appRouter = router({
   signIn: procedure
     .input(
       z.object({
-        email: z.string(),
-        password: z.string(),
+        email: z.string().email(),
+        password: z.string().min(8),
       }),
     )
     .mutation(async ({ ctx, input }) => {
