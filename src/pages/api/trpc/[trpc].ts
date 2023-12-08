@@ -29,7 +29,6 @@ export const appRouter = router({
                   }
                 : undefined,
             },
-            take: 10,
             orderBy: {
               createdAt: "desc",
             },
