@@ -5,7 +5,6 @@ import { PersonaProvider } from "@/context/personaContext";
 import { ThemeProvider } from "next-themes";
 
 import { Header } from "../header/Header";
-import { Footer } from "../footer/Feader";
 import { FaGithub } from "react-icons/fa";
 import { ConsoleProvider } from "@/context/consoleContext";
 import Head from "next/head";
