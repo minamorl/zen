@@ -43,6 +43,7 @@ export const appRouter = router({
     .input(
       z.object({
         name: z.string(),
+        lastTimeFetched: z.number().optional(),
       }),
     )
     .query(async (opts) => {
@@ -53,6 +54,13 @@ export const appRouter = router({
         },
         include: {
           posts: {
+            where: {
+              createdAt: opts.input.lastTimeFetched
+                ? {
+                    gt: new Date(opts.input.lastTimeFetched),
+                  }
+                : undefined,
+            },
             orderBy: {
               createdAt: "desc",
             },

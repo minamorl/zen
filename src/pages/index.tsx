@@ -53,30 +53,46 @@ const Title = ({
 export default function IndexPage() {
   const [boardName, setBoardName] = useState(DEFAULT_BOARD);
   const [persona] = usePersona();
-  const { data, isLoading, mutate } = trpc.createPost.useMutation();
+  const { mutate } = trpc.createPost.useMutation();
   const [key, setKey] = useState("invalid");
   const [submitting, setSubmitting] = useState(false);
   const [threadSubmitting, setThreadSubmitting] = useState(false);
   const { handleSubmit, register } = useForm<Inputs>();
-  const { theme, setTheme } = useTheme();
+  // undefined means first fetch
+  const [lastTimeFetched, setLastTimeFetched] = useState<number | undefined>(
+    undefined,
+  );
   const {
-    data: board,
+    data: fetchedBoard,
     refetch,
     isLoading: boardLoading,
     error: boardFetchError,
-  } = trpc.getBoard.useQuery({
-    name: boardName,
-  });
+  } = trpc.getBoard.useQuery(
+    {
+      name: boardName,
+      lastTimeFetched,
+    },
+    {
+      keepPreviousData: true,
+    },
+  );
+  const [board, setBoard] = useState(fetchedBoard);
   const [selectedPost, setSelectedPost] = useState("");
   const { mutate: createThread } = trpc.createThread.useMutation();
 
   const [threadInput, setThreadInput] = useState("");
   const [message, setMessage] = useConsole();
   useEffect(() => {
-    setMessage("Welcome to zen!");
+    const interval = setInterval(() => {
+      // 6 seconds ago for resolving delay
+      setLastTimeFetched(Date.now() - 6000);
+    }, 6000);
+    return () => clearInterval(interval);
   }, []);
   useEffect(() => {
     setMessage("You are in #" + boardName + "!");
+    setLastTimeFetched(undefined);
+    setBoard(undefined);
   }, [boardName]);
 
   const { mutate: getPresignedUrl, data: presignedUrl } =
@@ -95,7 +111,34 @@ export default function IndexPage() {
     };
     if (presignedUrl) await fetch(presignedUrl.presignedUrl, options);
   };
+  useEffect(() => {
+    if (!fetchedBoard) return;
+
+    setBoard((prev) => {
+      if (lastTimeFetched && prev) {
+        const newPosts = fetchedBoard.posts;
+        const existingPosts = prev.posts;
+
+        // Merge and remove duplicates
+        const combinedPosts = newPosts
+          .concat(existingPosts)
+          .reduce<any>((acc, current) => {
+            const x = acc.find((item: any) => item.id === current.id);
+            if (!x) {
+              return acc.concat([current]);
+            } else {
+              return acc;
+            }
+          }, []);
+
+        return { ...fetchedBoard, posts: combinedPosts };
+      } else {
+        return fetchedBoard;
+      }
+    });
+  }, [fetchedBoard, lastTimeFetched]);
   const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
+    setLastTimeFetched(Date.now());
     setSubmitting(true);
     setMessage("Submitting post...");
     if (!persona) return;
@@ -185,7 +228,7 @@ export default function IndexPage() {
           {submitting && (
             <li
               key="post-submitting"
-              className="shadow-2xl p-8 m-4 rounded opacity-50 bg-gray-700 bg-opacity-75"
+              className="shadow-2xl p-8 m-4 rounded bg-gray-700 bg-opacity-75"
             >
               <div>{key}</div>
               <div className="text-cyan-200">
