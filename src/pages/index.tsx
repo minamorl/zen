@@ -50,6 +50,55 @@ const Title = ({
   );
 };
 
+const PostForm = ({ onSubmit }: { onSubmit: SubmitHandler<Inputs> }) => {
+  const [persona] = usePersona();
+  const [message, setMessage] = useConsole();
+  const { handleSubmit, register } = useForm<Inputs>();
+
+  return (
+    <div
+      className="p-8 m-4 rounded-xl bg-gray-700 bg-opacity-75 shadow-2xl"
+      onMouseOver={() => {
+        persona || setMessage("Please log in first to post.");
+      }}
+      onKeyDown={(e) => {
+        if (e.ctrlKey && e.key === "Enter") {
+          handleSubmit(onSubmit)();
+        }
+      }}
+    >
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <textarea
+          className="rounded border-l-1 border-black w-full h-full resize-none focus:outline-none bg-transparent bg-opacity-100 "
+          rows={5}
+          {...register("raw_text")}
+        />
+        <input
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full"
+          type="submit"
+          value="Post"
+        />
+      </form>
+    </div>
+  );
+};
+
+const PostSubmittingDisplay = ({ key }: { key: string }) => {
+  return (
+    <li
+      key="post-submitting"
+      className="shadow-2xl p-8 m-4 rounded bg-gray-700 bg-opacity-75"
+    >
+      <div>{key}</div>
+      <div className="text-cyan-200">
+        Created at{" "}
+        {formatDistance(Date.now(), new Date(), {
+          addSuffix: true,
+        })}
+      </div>
+    </li>
+  );
+};
 export default function IndexPage() {
   const [boardName, setBoardName] = useState(DEFAULT_BOARD);
   const [persona] = usePersona();
@@ -121,7 +170,7 @@ export default function IndexPage() {
       }
     });
   }, [fetchedBoard, lastTimeFetched]);
-  const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
+  const onPostSubmit: SubmitHandler<Inputs> = async (inputs) => {
     setLastTimeFetched(Date.now());
     setSubmitting(true);
     setMessage("Submitting post...");
@@ -172,47 +221,11 @@ export default function IndexPage() {
     <div className="h-full w-full">
       <Title boardName={boardName} setBoardName={setBoardName} />
       <div>
-        <div
-          className="p-8 m-4 rounded-xl bg-gray-700 bg-opacity-75 shadow-2xl"
-          onMouseOver={() => {
-            persona || setMessage("Please log in first to post.");
-          }}
-          onKeyDown={(e) => {
-            if (e.ctrlKey && e.key === "Enter") {
-              handleSubmit(onSubmit)();
-            }
-          }}
-        >
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <textarea
-              className="rounded border-l-1 border-black w-full h-full resize-none focus:outline-none bg-transparent bg-opacity-100 "
-              rows={5}
-              {...register("raw_text")}
-            />
-            <input
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full"
-              type="submit"
-              value="Post"
-            />
-          </form>
-        </div>
+        <PostForm onSubmit={onPostSubmit} />
       </div>
       <div>
         <ul>
-          {submitting && (
-            <li
-              key="post-submitting"
-              className="shadow-2xl p-8 m-4 rounded bg-gray-700 bg-opacity-75"
-            >
-              <div>{key}</div>
-              <div className="text-cyan-200">
-                Created at{" "}
-                {formatDistance(Date.now(), new Date(), {
-                  addSuffix: true,
-                })}
-              </div>
-            </li>
-          )}
+          {submitting && <PostSubmittingDisplay key={key} />}
           {board.posts.map((v) => (
             <div key={v.id}>
               <li
