@@ -83,6 +83,34 @@ const PostForm = ({ onSubmit }: { onSubmit: SubmitHandler<Inputs> }) => {
   );
 };
 
+const BoardPost = ({
+  post,
+  setSelectedPost,
+  threadSubmitting,
+  createThread,
+  persona,
+  refetch,
+}) => {
+  const [threadInput, setThreadInput] = useState("");
+
+  return (
+    <div key={post.id}>
+      <li
+        className="shadow-2xl p-8 m-4 rounded cursor-pointer bg-gray-700 bg-opacity-75"
+        onClick={() => setSelectedPost(post.id)}
+      >
+        <div>{post.content}</div>
+        <div className="text-cyan-200">
+          Created at{" "}
+          {formatDistanceToNow(parseISO(post.createdAt), {
+            addSuffix: true,
+          })}
+        </div>
+      </li>
+    </div>
+  );
+};
+
 const PostSubmittingDisplay = ({ key }: { key: string }) => {
   return (
     <li
@@ -223,78 +251,20 @@ export default function IndexPage() {
       <div>
         <PostForm onSubmit={onPostSubmit} />
       </div>
+
       <div>
         <ul>
           {submitting && <PostSubmittingDisplay key={key} />}
-          {board.posts.map((v) => (
-            <div key={v.id}>
-              <li
-                key={"post-" + v.id}
-                className="shadow-2xl p-8 m-4 rounded cursor-pointer bg-gray-700 bg-opacity-75"
-                onClick={() => setSelectedPost(v.id)}
-              >
-                <div>{v.content}</div>
-                <div className="text-cyan-200">
-                  Created at{" "}
-                  {formatDistanceToNow(parseISO(v.createdAt), {
-                    addSuffix: true,
-                  })}
-                </div>
-              </li>
-              {v.threads.map((x) => (
-                <li
-                  key={"thread-" + x.id}
-                  className="shadow-2xl p-8 m-4 mx-8 rounded bg-gray-700 bg-opacity-75"
-                >
-                  <div>{x.content}</div>
-                  <div className="text-cyan-200">
-                    Created at{" "}
-                    {formatDistanceToNow(parseISO(v.createdAt), {
-                      addSuffix: true,
-                    })}
-                  </div>
-                </li>
-              ))}
-              {threadSubmitting && (
-                <li
-                  key="thread-submitting"
-                  className="shadow-2xl p-8 m-4 mx-8 rounded opacity-50 bg-gray-700 bg-opacity-75"
-                >
-                  <div>{threadInput}</div>
-                </li>
-              )}
-              {selectedPost === v.id && (
-                <li
-                  key="thread-input"
-                  className="shadow-2xl p-4 m-4 mx-8 rounded bg-gray-700 bg-opacity-75"
-                >
-                  <textarea
-                    onChange={(e) => setThreadInput(e.currentTarget.value)}
-                    value={threadInput}
-                    className="rounded border-l-1 border-black w-full h-full resize-none bg-transparent bg-opacity-75"
-                  />
-                  <button
-                    onClick={() => {
-                      setSelectedPost("");
-
-                      setThreadSubmitting(true);
-                      createThread({
-                        raw_text: threadInput,
-                        post_id: v.id,
-                        persona_id: persona,
-                      });
-                      window.setTimeout(() => {
-                        const r = refetch();
-                        r.then(() => setThreadSubmitting(false));
-                      }, 1000);
-                    }}
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full"
-                  >
-                    Create Thread
-                  </button>
-                </li>
-              )}
-            </div>
+          {board.posts.map((post) => (
+            <BoardPost
+              key={post.id}
+              post={post}
+              setSelectedPost={setSelectedPost}
+              threadSubmitting={threadSubmitting}
+              createThread={createThread}
+              persona={persona}
+              refetch={refetch}
+            />
           ))}
         </ul>
       </div>
