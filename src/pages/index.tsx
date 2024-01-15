@@ -83,16 +83,7 @@ const PostForm = ({ onSubmit }: { onSubmit: SubmitHandler<Inputs> }) => {
   );
 };
 
-const BoardPost = ({
-  post,
-  setSelectedPost,
-  threadSubmitting,
-  createThread,
-  persona,
-  refetch,
-}) => {
-  const [threadInput, setThreadInput] = useState("");
-
+const BoardPost = ({ post, setSelectedPost }: any) => {
   return (
     <div key={post.id}>
       <li
