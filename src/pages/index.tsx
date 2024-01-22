@@ -224,24 +224,26 @@ export default function IndexPage() {
   return (
     <div className="h-full w-full">
       <Title boardName={boardName} setBoardName={setBoardName} />
-      <div>
-        <PostForm onSubmit={onPostSubmit} />
-      </div>
+      <div className="max-w-4xl mx-auto">
+        <div>
+          <PostForm onSubmit={onPostSubmit} />
+        </div>
 
-      <div>
-        <ul>
-          {submitting && <PostSubmittingDisplay text={key} />}
-          {board.posts.map((post) => (
-            <BoardPost
-              key={post.id}
-              post={post}
-              setSelectedPost={setSelectedPost}
-              createThread={createThread}
-              persona={persona}
-              refetch={refetch}
-            />
-          ))}
-        </ul>
+        <div>
+          <ul>
+            {submitting && <PostSubmittingDisplay text={key} />}
+            {board.posts.map((post) => (
+              <BoardPost
+                key={post.id}
+                post={post}
+                setSelectedPost={setSelectedPost}
+                createThread={createThread}
+                persona={persona}
+                refetch={refetch}
+              />
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );
