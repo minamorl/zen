@@ -63,7 +63,7 @@ export default function MePage() {
     [];
 
   const options =
-    personas?.map((persona) => ({
+    personas?.personas.map((persona) => ({
       value: persona.id,
       label: persona.name,
     })) ?? [];
