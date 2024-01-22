@@ -88,11 +88,13 @@ export const appRouter = router({
     const user = opts.ctx.session.user;
     if (!user)
       return {
+        personas: [],
         message: "User not found",
         error: true,
       };
     if (!user.userId)
       return {
+        personas: [],
         message: "User not found",
         error: true,
       };
@@ -104,7 +106,9 @@ export const appRouter = router({
         },
       },
     });
-    return personas;
+    return {
+      personas: personas,
+    };
   }),
 
   signUp: procedure
