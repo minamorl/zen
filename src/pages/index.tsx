@@ -1,23 +1,11 @@
 import { SetStateAction, useEffect, useState, Dispatch } from "react";
 import { trpc } from "../utils/trpc";
 import { SubmitHandler, useForm } from "react-hook-form";
-import Link from "next/link";
-import {
-  format,
-  formatDistance,
-  formatDistanceToNow,
-  parseISO,
-} from "date-fns";
-import Uppy from "@uppy/core";
-import { Dashboard } from "@uppy/react";
-import Tus from "@uppy/tus";
+import { formatDistance, formatDistanceToNow, parseISO } from "date-fns";
 
 import "@uppy/core/dist/style.min.css";
 import "@uppy/dashboard/dist/style.min.css";
-import { randomUUID } from "crypto";
 import { usePersona } from "../context/personaContext";
-import { ConsoleUI } from "@/console";
-import { useTheme } from "next-themes";
 import { useConsole } from "../context/consoleContext";
 import { GoCommandPalette } from "react-icons/go";
 type Inputs = {
