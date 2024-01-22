@@ -23,3 +23,8 @@
   --foreground: #ffffff; /* Default foreground */
   --foreground-dark: #dee2e6; /* Darker shade for foreground */
 }
+
+body {
+  /* set background always on fixed position */
+  background: url(/bg.avif) fixed;
+}

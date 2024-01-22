@@ -24,7 +24,6 @@ export function PersonaProvider({ children }: { children: React.ReactNode }) {
   // Update localStorage when state changes
   useEffect(() => {
     localStorage.setItem("persona", JSON.stringify(persona));
-    console.log("here");
   }, [persona]);
   return (
     <PersonaContext.Provider value={[persona, setPersona]}>
