@@ -60,7 +60,7 @@ Then access to `localhost:3000`! Yay!
 
 ## Site
 
-Visit [zen-kohl.vercel.app](https://www.withzen.dev/) to see the live application.
+Visit [www.withzen.dev](https://www.withzen.dev/) to see the live application.
 
 ## Contributing
 
