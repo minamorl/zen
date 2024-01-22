@@ -2,9 +2,9 @@ import * as trpcNext from "@trpc/server/adapters/next";
 import { z } from "zod";
 import { procedure, router } from "../../../server/trpc";
 import { createContext } from "../../../server/trpc";
-import { v4 as uuidv4 } from "uuid";
 import { LuciaError } from "lucia";
 import { TRPCError } from "@trpc/server";
+import { warn } from "console";
 // Body
 export const appRouter = router({
   getBoard: procedure
@@ -39,7 +39,6 @@ export const appRouter = router({
           },
         },
       });
-      console.log(board);
       return board;
     }),
   createBoard: procedure
@@ -66,7 +65,6 @@ export const appRouter = router({
       }),
     )
     .mutation(async (opts) => {
-      // create posts
       const post = await opts.ctx.prisma.post.create({
         data: {
           persona: {
@@ -88,7 +86,18 @@ export const appRouter = router({
   getPersonas: procedure.query(async (opts) => {
     // find auth user from session
     const user = opts.ctx.session.user;
-    if (!user.userId) throw new Error("User not found");
+    if (!user)
+      return {
+        personas: [],
+        message: "User not found",
+        error: true,
+      };
+    if (!user.userId)
+      return {
+        personas: [],
+        message: "User not found",
+        error: true,
+      };
     // find personas from user
     const personas = await opts.ctx.prisma.persona.findMany({
       where: {
@@ -97,7 +106,9 @@ export const appRouter = router({
         },
       },
     });
-    return personas;
+    return {
+      personas: personas,
+    };
   }),
 
   signUp: procedure
