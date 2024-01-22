@@ -1,10 +1,15 @@
 <pre>
-███████╗███████╗███╗ ██╗
-╚══███╔╝██╔════╝████╗ ██║
-███╔╝ ███████╗██╔██╗ ██║
-███╔╝ ███════╝██║╚██╗██║
-███████╗███████║██║ ╚████║
-╚══════╝╚══════╝╚═╝ ╚═══╝
+      ___           ___           ___     
+     /\__\         /\__\         /\  \    
+    /::|  |       /:/ _/_        \:\  \   
+   /:/:|  |      /:/ /\__\        \:\  \  
+  /:/|:|  |__   /:/ /:/ _/_   _____\:\  \ 
+ /:/ |:| /\__\ /:/_/:/ /\__\ /::::::::\__\
+ \/__|:|/:/  / \:\/:/ /:/  / \:\~~\~~\/__/
+     |:/:/  /   \::/_/:/  /   \:\  \      
+     |::/  /     \:\/:/  /     \:\  \     
+     |:/  /       \::/  /       \:\__\    
+     |/__/         \/__/         \/__/  
 </pre>
 
 # zen - A Progressive Social Web Platform
@@ -18,6 +23,10 @@ Zen is code-first. Always functioning code is correct, and everything else will 
 The spirit of fixing things on your own is at the heart of Zen.
 
 We leave the responsibility of maintaining data persistence not to the server side but to the users. In other words, we make no guarantees about the data.
+
+## Screenshots
+
+![image](https://github.com/minamorl/zen/assets/5278817/6d8c854e-a96a-4d82-b081-16ff31bdd3bf)
 
 ## Getting Started
 
