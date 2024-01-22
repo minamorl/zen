@@ -90,13 +90,13 @@ const BoardPost = ({ post, setSelectedPost }: any) => {
   );
 };
 
-const PostSubmittingDisplay = ({ key }: { key: string }) => {
+const PostSubmittingDisplay = ({ text }: { text: string }) => {
   return (
     <li
       key="post-submitting"
       className="shadow-2xl p-8 m-4 rounded bg-gray-700 bg-opacity-75"
     >
-      <div>{key}</div>
+      <div>{text}</div>
       <div className="text-cyan-200">
         Created at{" "}
         {formatDistance(Date.now(), new Date(), {
@@ -112,8 +112,6 @@ export default function IndexPage() {
   const { mutate } = trpc.createPost.useMutation();
   const [key, setKey] = useState("invalid");
   const [submitting, setSubmitting] = useState(false);
-  const [threadSubmitting, setThreadSubmitting] = useState(false);
-  const { handleSubmit, register } = useForm<Inputs>();
   // undefined means first fetch
   const [lastTimeFetched, setLastTimeFetched] = useState<number | undefined>(
     undefined,
@@ -122,7 +120,6 @@ export default function IndexPage() {
     data: fetchedBoard,
     refetch,
     isLoading: boardLoading,
-    error: boardFetchError,
   } = trpc.getBoard.useQuery(
     {
       name: boardName,
@@ -233,13 +230,12 @@ export default function IndexPage() {
 
       <div>
         <ul>
-          {submitting && <PostSubmittingDisplay key={key} />}
+          {submitting && <PostSubmittingDisplay text={key} />}
           {board.posts.map((post) => (
             <BoardPost
               key={post.id}
               post={post}
               setSelectedPost={setSelectedPost}
-              threadSubmitting={threadSubmitting}
               createThread={createThread}
               persona={persona}
               refetch={refetch}
