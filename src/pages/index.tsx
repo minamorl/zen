@@ -8,6 +8,8 @@ import "@uppy/dashboard/dist/style.min.css";
 import { usePersona } from "../context/personaContext";
 import { useConsole } from "../context/consoleContext";
 import { GoCommandPalette } from "react-icons/go";
+import { animated, useSpring } from "@react-spring/web";
+
 type Inputs = {
   raw_text: string;
 };
@@ -72,8 +74,12 @@ const PostForm = ({ onSubmit }: { onSubmit: SubmitHandler<Inputs> }) => {
 };
 
 const BoardPost = ({ post, setSelectedPost }: any) => {
+  const styles = useSpring({
+    from: { opacity: 0, transform: "translate3d(0, -40px, 0)" },
+    to: { opacity: 1, transform: "translate3d(0, 0, 0)" },
+  });
   return (
-    <div key={post.id}>
+    <animated.div key={post.id} style={styles}>
       <li
         className="shadow-2xl p-8 m-4 rounded cursor-pointer bg-gray-700 bg-opacity-75"
         onClick={() => setSelectedPost(post.id)}
@@ -86,7 +92,7 @@ const BoardPost = ({ post, setSelectedPost }: any) => {
           })}
         </div>
       </li>
-    </div>
+    </animated.div>
   );
 };
 
