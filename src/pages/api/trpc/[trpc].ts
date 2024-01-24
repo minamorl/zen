@@ -81,6 +81,14 @@ export const appRouter = router({
         },
       });
       console.log(post);
+
+      fetch(process.env.NEXT_PUBLIC_URL + "/api/bot/pingpong", {
+        method: "POST",
+        body: JSON.stringify({
+          event: "createPost",
+          value: { post },
+        }),
+      });
       return post;
     }),
   getPersonas: procedure.query(async (opts) => {
