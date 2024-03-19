@@ -9,6 +9,7 @@ import { usePersona } from "../context/personaContext";
 import { useConsole } from "../context/consoleContext";
 import { GoCommandPalette } from "react-icons/go";
 import { animated, useSpring } from "@react-spring/web";
+import Dragndrop from "../dragndrop/dragndrop";
 
 type Inputs = {
   raw_text: string;
@@ -251,6 +252,7 @@ export default function IndexPage() {
           </ul>
         </div>
       </div>
+      <Dragndrop />
     </div>
   );
 }
