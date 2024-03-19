@@ -1,5 +1,5 @@
 import { createContext } from "@/server/trpc";
-import { Configuration, OpenAI } from "openai";
+import { OpenAI } from "openai";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 type ResponseData = {
