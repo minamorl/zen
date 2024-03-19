@@ -89,6 +89,13 @@ export const appRouter = router({
           value: { post },
         }),
       });
+      fetch(process.env.NEXT_PUBLIC_URL + "/api/bot/chatgpt", {
+        method: "POST",
+        body: JSON.stringify({
+          event: "createPost",
+          value: { post },
+        }),
+      });
       return post;
     }),
   getPersonas: procedure.query(async (opts) => {

@@ -35,6 +35,7 @@
     "lucia": "^2.7.4",
     "next": "14.0.3",
     "next-themes": "^0.2.1",
+    "openai": "^4.29.1",
     "react": "^18",
     "react-cookie": "^6.1.1",
     "react-dom": "^18",
