@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
+import { trpc } from "../utils/trpc";
+import { usePersona } from "../context/personaContext";
 
 const DragDropArea = () => {
   const [isDragging, setIsDragging] = useState(false);
+  const createPost = trpc.createPost.useMutation();
+  const [persona] = usePersona();
 
   useEffect(() => {
     const handleDragEnter = (event) => {
@@ -49,9 +53,21 @@ const DragDropArea = () => {
 
         const uploadResults = await Promise.all(uploadPromises);
         console.log("Files uploaded:", uploadResults);
-        // Handle the uploaded files or data as needed
+
+        // Create a new post with the uploaded file URL
+        const postData = {
+          persona_id: persona,
+          raw_text: "",
+          board_name: "test",
+          attachment_url: uploadResults[0], // Assuming only one file is uploaded
+        };
+
+        const createPostResult = await createPost.mutateAsync(postData);
+        console.log("Post created:", createPostResult);
+
+        // Handle the created post as needed
       } catch (error) {
-        console.error("Error uploading files:", error);
+        console.error("Error uploading files or creating post:", error);
       }
     };
 

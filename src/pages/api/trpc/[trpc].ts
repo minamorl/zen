@@ -35,6 +35,7 @@ export const appRouter = router({
             include: {
               threads: true,
               persona: true,
+              attachment: true,
             },
           },
         },

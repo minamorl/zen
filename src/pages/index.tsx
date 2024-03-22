@@ -10,6 +10,8 @@ import { useConsole } from "../context/consoleContext";
 import { GoCommandPalette } from "react-icons/go";
 import { animated, useSpring } from "@react-spring/web";
 import Dragndrop from "../dragndrop/dragndrop";
+import { Prisma } from "@prisma/client";
+import Image from "next/image";
 
 type Inputs = {
   raw_text: string;
@@ -74,11 +76,26 @@ const PostForm = ({ onSubmit }: { onSubmit: SubmitHandler<Inputs> }) => {
   );
 };
 
-const BoardPost = ({ post, setSelectedPost }: any) => {
+interface BoardPostProps {
+  post: Prisma.PostGetPayload<{
+    include: {
+      attachment: true;
+    };
+  }>;
+  setSelectedPost: (postId: string) => void;
+}
+const BoardPost: React.FC<BoardPostProps> = ({ post, setSelectedPost }) => {
   const styles = useSpring({
     from: { opacity: 0, transform: "translate3d(0, -40px, 0)" },
     to: { opacity: 1, transform: "translate3d(0, 0, 0)" },
   });
+
+  const s3url =
+    post.attachment?.url.replace("http://s3:9000/zen/", "").split("?")[0] ??
+    null;
+  const proxyUrl = `/api/s3-proxy?url=${s3url}`;
+  console.log(proxyUrl);
+
   return (
     <animated.div key={post.id} style={styles}>
       <li
@@ -86,6 +103,16 @@ const BoardPost = ({ post, setSelectedPost }: any) => {
         onClick={() => setSelectedPost(post.id)}
       >
         <div>{post.content}</div>
+        {post.attachment && (
+          <div className="mt-4">
+            <Image
+              src={proxyUrl}
+              className="w-full"
+              width={1200}
+              height={600}
+            />
+          </div>
+        )}
         <div className="text-cyan-200">
           Created at{" "}
           {formatDistanceToNow(parseISO(post.createdAt), {
@@ -134,6 +161,18 @@ export default function IndexPage() {
     },
     {
       keepPreviousData: true,
+      select: (data) => {
+        if (data) {
+          return {
+            ...data,
+            posts: data.posts.map((post) => ({
+              ...post,
+              attachment: post.attachment || null,
+            })),
+          };
+        }
+        return data;
+      },
     },
   );
   const [board, setBoard] = useState(fetchedBoard);
