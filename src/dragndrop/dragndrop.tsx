@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import s3 from "../utils/s3";
 
 const DragDropArea = () => {
   const [isDragging, setIsDragging] = useState(false);
@@ -21,14 +22,38 @@ const DragDropArea = () => {
       setIsDragging(false);
     };
 
-    const handleDrop = (event) => {
+    const handleDrop = async (event) => {
       event.preventDefault();
       event.stopPropagation();
       setIsDragging(false);
-      // Handle the dropped files or data here
+
       const files = event.dataTransfer.files;
       console.log(files);
-      // Process the dropped files or data as needed
+
+      try {
+        const uploadPromises = Array.from(files).map(async (file) => {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            return data.url;
+          } else {
+            throw new Error("Error uploading file");
+          }
+        });
+
+        const uploadResults = await Promise.all(uploadPromises);
+        console.log("Files uploaded:", uploadResults);
+        // Handle the uploaded files or data as needed
+      } catch (error) {
+        console.error("Error uploading files:", error);
+      }
     };
 
     document.addEventListener("dragenter", handleDragEnter);
