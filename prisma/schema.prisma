@@ -11,16 +11,15 @@ datasource db {
 }
 
 model User {
-  id       String    @id @unique
-  personas Persona[]
-  email    String?
-
+  id           String    @id @unique @default(uuid())
+  personas     Persona[]
+  email        String?
   auth_session Session[]
   key          Key[]
 }
 
 model Session {
-  id             String @id @unique
+  id             String @id @unique @default(uuid())
   user_id        String
   active_expires BigInt
   idle_expires   BigInt
@@ -30,7 +29,7 @@ model Session {
 }
 
 model Key {
-  id              String  @id @unique
+  id              String  @id @unique @default(uuid())
   hashed_password String?
   user_id         String
   user            User    @relation(references: [id], fields: [user_id], onDelete: Cascade)
@@ -39,39 +38,47 @@ model Key {
 }
 
 model Persona {
-  id      String   @id @default(uuid())
-  name    String
-  userId  String
-  user    User     @relation(fields: [userId], references: [id])
-  posts   Post[]
-  threads Thread[]
-  createdAt DateTime @default(now())
-}
-
-model Board {
-  id    String @id @default(uuid())
-  title String @unique
-  posts Post[]
-  createdAt DateTime @default(now())
-}
-
-model Post {
   id        String   @id @default(uuid())
-  boardId   String
-  board     Board    @relation(fields: [boardId], references: [id])
-  content   String   @db.Text
-  personaId String
-  persona   Persona  @relation(fields: [personaId], references: [id])
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  posts     Post[]
   threads   Thread[]
   createdAt DateTime @default(now())
 }
 
+model Board {
+  id        String   @id @default(uuid())
+  title     String   @unique
+  posts     Post[]
+  createdAt DateTime @default(now())
+}
+
+model Post {
+  id         String      @id @default(uuid())
+  boardId    String
+  board      Board       @relation(fields: [boardId], references: [id])
+  content    String      @db.Text
+  personaId  String
+  persona    Persona     @relation(fields: [personaId], references: [id])
+  threads    Thread[]
+  attachment Attachment?
+  createdAt  DateTime    @default(now())
+}
+
 model Thread {
-  id        String  @id @default(uuid())
-  content   String  @db.Text
+  id        String   @id @default(uuid())
+  content   String   @db.Text
   postId    String
   personaId String
-  persona   Persona @relation(fields: [personaId], references: [id])
-  post      Post    @relation(fields: [postId], references: [id])
+  persona   Persona  @relation(fields: [personaId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
   createdAt DateTime @default(now())
+}
+
+model Attachment {
+  id     String @id @default(uuid())
+  url    String
+  postId String @unique
+  post   Post   @relation(fields: [postId], references: [id])
 }
