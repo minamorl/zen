@@ -62,7 +62,7 @@ export const appRouter = router({
         persona_id: z.string(),
         raw_text: z.string(),
         board_name: z.string(),
-        attachment: z.string().optional(),
+        attachment_url: z.string().optional(),
       }),
     )
     .mutation(async (opts) => {
@@ -79,6 +79,16 @@ export const appRouter = router({
               title: opts.input.board_name,
             },
           },
+          attachment: opts.input.attachment_url
+            ? {
+                create: {
+                  url: opts.input.attachment_url,
+                },
+              }
+            : undefined,
+        },
+        include: {
+          attachment: true,
         },
       });
       console.log(post);
