@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import s3 from "../utils/s3";
 
 const DragDropArea = () => {
   const [isDragging, setIsDragging] = useState(false);
