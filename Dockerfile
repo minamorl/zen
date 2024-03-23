@@ -5,11 +5,11 @@ FROM node:20
 WORKDIR /app
 
 # Copying package.json and package-lock.json
-#COPY package.json package-lock.json ./
-#COPY prisma ./prisma/
+COPY package.json package-lock.json ./
+COPY prisma ./prisma/
 
 # Installing dependencies
-#RUN npm install
+RUN npm install
 
 # Copying the rest of the application's code
 COPY . .
