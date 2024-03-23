@@ -76,12 +76,18 @@ const PostForm = ({ onSubmit }: { onSubmit: SubmitHandler<Inputs> }) => {
   );
 };
 
+type CastDateProps<T> = {
+  [K in keyof T]: T[K] extends Date ? string : T[K];
+};
+
 interface BoardPostProps {
-  post: Prisma.PostGetPayload<{
-    include: {
-      attachment: true;
-    };
-  }>;
+  post: CastDateProps<
+    Prisma.PostGetPayload<{
+      include: {
+        attachment: true;
+      };
+    }>
+  >;
   setSelectedPost: (postId: string) => void;
 }
 const BoardPost: React.FC<BoardPostProps> = ({ post, setSelectedPost }) => {
@@ -116,7 +122,7 @@ const BoardPost: React.FC<BoardPostProps> = ({ post, setSelectedPost }) => {
         )}
         <div className="text-cyan-200">
           Created at{" "}
-          {formatDistanceToNow(parseISO(post.createdAt as any as string), {
+          {formatDistanceToNow(parseISO(post.createdAt), {
             addSuffix: true,
           })}
         </div>
