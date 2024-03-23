@@ -107,6 +107,7 @@ const BoardPost: React.FC<BoardPostProps> = ({ post, setSelectedPost }) => {
           <div className="mt-4">
             <Image
               src={proxyUrl}
+              alt="attachment image"
               className="w-full"
               width={1200}
               height={600}
@@ -115,7 +116,7 @@ const BoardPost: React.FC<BoardPostProps> = ({ post, setSelectedPost }) => {
         )}
         <div className="text-cyan-200">
           Created at{" "}
-          {formatDistanceToNow(parseISO(post.createdAt), {
+          {formatDistanceToNow(parseISO(post.createdAt.toString()), {
             addSuffix: true,
           })}
         </div>
