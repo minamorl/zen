@@ -11,8 +11,10 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.536.0",
+    "@aws-sdk/s3-request-presigner": "^3.536.0",
     "@lucia-auth/adapter-prisma": "^3.0.2",
-    "@prisma/client": "^5.6.0",
+    "@prisma/client": "^5.11.0",
     "@react-spring/web": "^9.7.3",
     "@rpldy/uploady": "^1.6.1",
     "@supabase/auth-ui-react": "^0.4.6",
@@ -31,10 +33,16 @@
     "@uppy/progress-bar": "^3.0.4",
     "@uppy/react": "^3.2.1",
     "@uppy/tus": "^3.4.0",
+    "aws-sdk": "^2.1580.0",
     "date-fns": "^2.30.0",
+    "formidable": "^3.5.1",
+    "fs": "^0.0.1-security",
+    "install": "^0.13.0",
     "lucia": "^2.7.4",
     "next": "14.0.3",
+    "next-s3-upload": "^0.3.4",
     "next-themes": "^0.2.1",
+    "npm": "^10.5.0",
     "openai": "^4.29.1",
     "react": "^18",
     "react-cookie": "^6.1.1",
@@ -47,6 +55,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/formidable": "^3.4.5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -58,7 +67,7 @@
     "lint-staged": "^15.1.0",
     "postcss": "^8",
     "prettier": "3.1.0",
-    "prisma": "^5.6.0",
+    "prisma": "^5.11.0",
     "tailwindcss": "^3.3.0",
     "tw-colors": "^3.3.1",
     "typescript": "^5"

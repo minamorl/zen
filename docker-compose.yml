@@ -5,7 +5,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/mydb
+      - DATABASE_URL=mysql://user:password@db:3306/mydb
     depends_on:
       - db
     volumes:
@@ -13,15 +13,38 @@ services:
       - ./public/:/app/public
       - ./prisma/:/app/prisma
   db:
-    image: postgres
+    image: mysql:5.7
     ports:
-      - "5433:5432"
+      - "3307:3306"
     environment:
-      - POSTGRES_DB=mydb
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - MYSQL_DATABASE=mydb
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+      - MYSQL_ROOT_PASSWORD=rootpassword
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --init-file=/docker-entrypoint-initdb.d/init.sql
+    restart: always
+
+  s3:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "38763:38763"
+    environment:
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=minio123
+      - MINIO_REGION_NAME=my-location
+    volumes:
+      - s3_data:/data
+      - s3_config:/root/.minio
+      - ./cors.json:/root/.minio/config/cors.json
+    command: server /data --console-address ":38763"
 
 volumes:
-  postgres_data:
+  mysql_data: # Updated for MySQL
+  s3_data:
+  s3_config:

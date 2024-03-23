@@ -35,6 +35,7 @@ export const appRouter = router({
             include: {
               threads: true,
               persona: true,
+              attachment: true,
             },
           },
         },
@@ -62,6 +63,7 @@ export const appRouter = router({
         persona_id: z.string(),
         raw_text: z.string(),
         board_name: z.string(),
+        attachment_url: z.string().optional(),
       }),
     )
     .mutation(async (opts) => {
@@ -78,31 +80,20 @@ export const appRouter = router({
               title: opts.input.board_name,
             },
           },
+          attachment: opts.input.attachment_url
+            ? {
+                create: {
+                  url: opts.input.attachment_url,
+                },
+              }
+            : undefined,
+        },
+        include: {
+          attachment: true,
         },
       });
       console.log(post);
 
-      fetch(process.env.NEXT_PUBLIC_URL + "/api/bot/pingpong", {
-        method: "POST",
-        body: JSON.stringify({
-          event: "createPost",
-          value: { post },
-        }),
-      });
-      fetch(process.env.NEXT_PUBLIC_URL + "/api/bot/chatgpt", {
-        method: "POST",
-        body: JSON.stringify({
-          event: "createPost",
-          value: { post },
-        }),
-      });
-      fetch(process.env.NEXT_PUBLIC_URL + "/api/bot/cleanup", {
-        method: "POST",
-        body: JSON.stringify({
-          event: "createPost",
-          value: { post },
-        }),
-      });
       return post;
     }),
   getPersonas: procedure.query(async (opts) => {
