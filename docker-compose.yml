@@ -23,6 +23,7 @@ services:
       - MYSQL_ROOT_PASSWORD=rootpassword
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     command:
       - --default-authentication-plugin=mysql_native_password
       - --init-file=/docker-entrypoint-initdb.d/init.sql
