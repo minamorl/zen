@@ -4,6 +4,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { IncomingForm, Files, Fields } from "formidable";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 
 const s3Client = new S3Client({
@@ -46,9 +47,11 @@ export default async function handler(
       try {
         const fileStream = fs.createReadStream(file.filepath);
 
+        // random file name via uuid
+        const fileName = `${uuidv4()}-${file.originalFilename}`;
         const params = {
           Bucket: process.env.S3_UPLOAD_BUCKET!,
-          Key: file.originalFilename!,
+          Key: fileName,
           Body: fileStream,
           ContentType: file.mimetype!,
         };
@@ -58,7 +61,7 @@ export default async function handler(
 
         const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
 
-        res.status(200).json({ url });
+        res.status(200).json({ url: fileName });
       } catch (error) {
         console.error("Error uploading file:", error);
         res.status(500).json({ error: "Error uploading file" });
