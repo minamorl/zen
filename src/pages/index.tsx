@@ -184,7 +184,6 @@ export default function IndexPage() {
   );
   const [board, setBoard] = useState(fetchedBoard);
   const [selectedPost, setSelectedPost] = useState("");
-  const { mutate: createThread } = trpc.createThread.useMutation();
 
   const [threadInput, setThreadInput] = useState("");
   const [message, setMessage] = useConsole();
@@ -290,9 +289,6 @@ export default function IndexPage() {
                 key={post.id}
                 post={post}
                 setSelectedPost={setSelectedPost}
-                createThread={createThread}
-                persona={persona}
-                refetch={refetch}
               />
             ))}
           </ul>
