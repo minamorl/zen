@@ -8,24 +8,24 @@ const DragDropArea = () => {
   const [persona] = usePersona();
 
   useEffect(() => {
-    const handleDragEnter = (event) => {
+    const handleDragEnter = (event: any) => {
       event.preventDefault();
       event.stopPropagation();
       setIsDragging(true);
     };
 
-    const handleDragOver = (event) => {
+    const handleDragOver = (event: any) => {
       event.preventDefault();
       event.stopPropagation();
     };
 
-    const handleDragLeave = (event) => {
+    const handleDragLeave = (event: any) => {
       event.preventDefault();
       event.stopPropagation();
       setIsDragging(false);
     };
 
-    const handleDrop = async (event) => {
+    const handleDrop = async (event: any) => {
       event.preventDefault();
       event.stopPropagation();
       setIsDragging(false);
@@ -34,7 +34,7 @@ const DragDropArea = () => {
       console.log(files);
 
       try {
-        const uploadPromises = Array.from(files).map(async (file) => {
+        const uploadPromises = Array.from(files).map(async (file: any) => {
           const formData = new FormData();
           formData.append("file", file);
 
@@ -82,7 +82,7 @@ const DragDropArea = () => {
       document.removeEventListener("dragleave", handleDragLeave);
       document.removeEventListener("drop", handleDrop);
     };
-  }, []);
+  }, [createPost, persona]);
 
   if (!isDragging) {
     return null;
