@@ -116,7 +116,7 @@ const BoardPost: React.FC<BoardPostProps> = ({ post, setSelectedPost }) => {
         )}
         <div className="text-cyan-200">
           Created at{" "}
-          {formatDistanceToNow(parseISO(post.createdAt.toString()), {
+          {formatDistanceToNow(parseISO(post.createdAt as any as string), {
             addSuffix: true,
           })}
         </div>
