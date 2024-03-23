@@ -27,7 +27,7 @@ export default async function handler(
       Key: url,
     };
 
-    const response = await s3.getObject(params).promise();
+    const response = await (s3 as any).getObject(params).promise();
 
     res.setHeader("Content-Type", response.ContentType);
     res.setHeader("Content-Length", response.ContentLength);
