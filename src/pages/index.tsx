@@ -3,8 +3,6 @@ import { trpc } from "../utils/trpc";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { formatDistance, formatDistanceToNow, parseISO } from "date-fns";
 
-import "@uppy/core/dist/style.min.css";
-import "@uppy/dashboard/dist/style.min.css";
 import { usePersona } from "../context/personaContext";
 import { useConsole } from "../context/consoleContext";
 import { GoCommandPalette } from "react-icons/go";
