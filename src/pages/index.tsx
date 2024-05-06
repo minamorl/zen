@@ -10,6 +10,8 @@ import { animated, useSpring } from "@react-spring/web";
 import Dragndrop from "../dragndrop/dragndrop";
 import { Prisma } from "@prisma/client";
 import Image from "next/image";
+import { useRouter } from "next/router";
+import Link from "next/link";
 
 type Inputs = {
   raw_text: string;
@@ -69,6 +71,84 @@ const PostForm = ({ onSubmit }: { onSubmit: SubmitHandler<Inputs> }) => {
           type="submit"
           value="Post"
         />
+      </form>
+    </div>
+  );
+};
+
+type LoginFormInputs = {
+  email: string;
+  password: string;
+};
+const LoginForm: React.FC = () => {
+  const {
+    handleSubmit,
+    register,
+    formState: { errors },
+  } = useForm<LoginFormInputs>();
+  const {
+    mutate: signIn,
+    data: signInResult,
+    error,
+  } = trpc.signIn.useMutation();
+  const router = useRouter();
+  const [message, setMessage] = useConsole();
+  useEffect(() => {
+    setMessage("I don't know you yet. Please sign up!");
+  }, []);
+
+  const onSubmit = async (data: LoginFormInputs) => {
+    signIn({ ...data });
+  };
+  useEffect(() => {
+    if (signInResult) {
+      router.push("/me");
+    }
+  }, [signInResult]);
+  return (
+    <div className="p-8 m-4 rounded-xl bg-gray-300 text-gray-800 bg-opacity-75 shadow-2xl">
+      <form onSubmit={handleSubmit(onSubmit)} className="">
+        <h2 className="text-2xl font-bold  pb-2">Welcome to zen</h2>
+        <h3 className="text-xl  pb-8">
+          Before to comment, you need to sign up first.
+        </h3>
+        <div className="mb-4">
+          <label htmlFor="email" className="block mb-2 text-sm font-bold">
+            Email
+          </label>
+          <input
+            {...register("email", { required: "Email is required" })}
+            type="email"
+            className="w-full px-3 py-2 leading-tight text-gray-200 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
+            placeholder="Email"
+          />
+        </div>
+
+        <div className="mb-6">
+          <label htmlFor="password" className="block mb-2 text-sm font-bold">
+            Password
+          </label>
+          <input
+            {...register("password", { required: "Password is required" })}
+            type="password"
+            className="w-full px-3 py-2 mb-3 leading-tight text-gray-200 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
+            placeholder="Password"
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-700 focus:outline-none focus:shadow-outline"
+        >
+          Sign In
+        </button>
+        <p className="mt-4 text-xs text-gray-500">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="text-blue-500">
+            Sign up
+          </Link>
+        </p>
+        {error && <p className="mt-4 text-xs text-red-500">{error.message}</p>}
       </form>
     </div>
   );
@@ -275,9 +355,15 @@ export default function IndexPage() {
     <div className="h-full w-full">
       <Title boardName={boardName} setBoardName={setBoardName} />
       <div className="max-w-4xl mx-auto">
-        <div>
-          <PostForm onSubmit={onPostSubmit} />
-        </div>
+        {document.cookie === "" && !persona ? (
+          <div>
+            <LoginForm />
+          </div>
+        ) : (
+          <div>
+            <PostForm onSubmit={onPostSubmit} />
+          </div>
+        )}
 
         <div>
           <ul>

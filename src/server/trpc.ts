@@ -22,10 +22,15 @@ const auth = lucia({
 });
 
 export const createContext = async ({ req, res }: CreateNextContextOptions) => {
-  const sessionId = auth.readSessionCookie(req.headers.cookie);
+  const sessionId = auth.readSessionCookie(req.headers.cookie)!;
   let session = null;
-  if (sessionId) session = await auth.getSession(sessionId);
-  console.log(session);
+  try {
+    session = await auth.getSession(sessionId);
+  } catch (e) {
+    // Session is wrong. clear the cookie
+    console.error("Session is wrong. clear the cookie");
+    res.setHeader("Set-Cookie", "");
+  }
 
   // Use the singleton Prisma client and Lucia auth in the context
   return {
