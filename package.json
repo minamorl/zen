@@ -24,6 +24,7 @@
     "@trpc/next": "^10.44.1",
     "@trpc/react-query": "^10.44.1",
     "@trpc/server": "^10.44.1",
+    "arctic": "^1.8.0",
     "aws-sdk": "^2.1580.0",
     "date-fns": "^2.30.0",
     "formidable": "^3.5.1",
