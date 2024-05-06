@@ -76,12 +76,16 @@ const PostForm = ({ onSubmit }: { onSubmit: SubmitHandler<Inputs> }) => {
   );
 };
 
+type LoginFormInputs = {
+  email: string;
+  password: string;
+};
 const LoginForm: React.FC = () => {
   const {
     handleSubmit,
     register,
     formState: { errors },
-  } = useForm<Inputs>();
+  } = useForm<LoginFormInputs>();
   const {
     mutate: signIn,
     data: signInResult,
@@ -93,7 +97,7 @@ const LoginForm: React.FC = () => {
     setMessage("I don't know you yet. Please sign up!");
   }, []);
 
-  const onSubmit = async (data: Inputs) => {
+  const onSubmit = async (data: LoginFormInputs) => {
     signIn({ ...data });
   };
   useEffect(() => {
