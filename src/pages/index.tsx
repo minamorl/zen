@@ -11,6 +11,7 @@ import Dragndrop from "../dragndrop/dragndrop";
 import { Prisma } from "@prisma/client";
 import Image from "next/image";
 import { useRouter } from "next/router";
+import Link from "next/link";
 
 type Inputs = {
   raw_text: string;
@@ -138,10 +139,10 @@ const LoginForm: React.FC = () => {
           Sign In
         </button>
         <p className="mt-4 text-xs text-gray-500">
-          Don't have an account?{" "}
-          <a href="/signup" className="text-blue-500">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="text-blue-500">
             Sign up
-          </a>
+          </Link>
         </p>
         {error && <p className="mt-4 text-xs text-red-500">{error.message}</p>}
       </form>
