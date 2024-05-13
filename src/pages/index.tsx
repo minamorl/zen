@@ -54,7 +54,7 @@ const PostForm = ({ onSubmit }: { onSubmit: SubmitHandler<Inputs> }) => {
 
   return (
     <div
-      className="p-8 m-4 rounded-xl bg-gray-700 bg-opacity-75 shadow-2xl"
+      className="p-4 m-4 rounded-xl bg-gray-700 bg-opacity-75 shadow-2xl"
       onMouseOver={() => {
         persona || setMessage("Please log in first to post.");
       }}

@@ -13,7 +13,11 @@ const Editor: React.FC = () => {
     }
   }, [editorRef]);
 
-  return <div ref={editorRef} />;
+  return (
+    <div className="quill">
+      <div ref={editorRef} />
+    </div>
+  );
 };
 
 export default Editor;
