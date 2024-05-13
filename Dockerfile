@@ -4,6 +4,7 @@ FROM node:20
 # Setting the working directory
 WORKDIR /app
 
+RUN npm install -g pnpm
 # Copying package.json and package-lock.json
 #COPY package.json package-lock.json ./
 #COPY prisma ./prisma/
@@ -18,4 +19,4 @@ COPY . .
 EXPOSE 3000
 
 # Starting the development server
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "run", "dev"]
