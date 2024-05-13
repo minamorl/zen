@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* import from quill/dist/quill.snow.css */
+@import url("quill/dist/quill.snow.css");
+
 :root {
   /* Your default theme with gradations */
   --background-light: #f8f9fa; /* Lighter shade for background */
