@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
@@ -267,15 +268,20 @@ fn refine_conflict(base: &str, a: &str, b: &str) -> Vec<Segment> {
     result
 }
 
-fn render(segments: &[Segment], marker_length: usize) -> (String, usize) {
+fn render(segments: &[(Segment, bool)], marker_length: usize) -> (String, usize) {
     let mut out = String::new();
     let mut conflicts = 0;
     let mut pending = (String::new(), String::new(), String::new());
     let mut has_pending = false;
     let refined: Vec<Segment> = segments
         .iter()
-        .flat_map(|segment| match segment {
+        .flat_map(|(segment, forced)| match segment {
             Segment::Text(value) => vec![Segment::Text(value.clone())],
+            Segment::Conflict { base, a, b } if *forced => vec![Segment::Conflict {
+                base: base.clone(),
+                a: a.clone(),
+                b: b.clone(),
+            }],
             Segment::Conflict { base, a, b } => refine_conflict(base, a, b),
         })
         .collect();
@@ -312,6 +318,171 @@ fn invalid_utf8() -> ExitCode {
     ExitCode::from(2)
 }
 
+// The library deliberately orders coincident insertions. A Git driver must
+// instead leave every ordering decision visible as a conflict.
+fn driver_merge(base: &str, a: &Edit, b: &Edit) -> Vec<(Segment, bool)> {
+    struct SideChange<'a> {
+        change: &'a Change,
+        side: usize,
+    }
+
+    fn root(parents: &mut [usize], mut i: usize) -> usize {
+        while parents[i] != i {
+            parents[i] = parents[parents[i]];
+            i = parents[i];
+        }
+        i
+    }
+
+    fn touches(a: &Change, b: &Change) -> bool {
+        let a_insert = a.start == a.end;
+        let b_insert = b.start == b.end;
+        if a_insert && b_insert {
+            a.start == b.start
+        } else if a_insert {
+            b.start <= a.start && a.start <= b.end
+        } else if b_insert {
+            a.start <= b.start && b.start <= a.end
+        } else {
+            a.start < b.end && b.start < a.end
+        }
+    }
+
+    fn forces_conflict(a: &Change, b: &Change) -> bool {
+        let a_insert = a.start == a.end;
+        let b_insert = b.start == b.end;
+        if a_insert && b_insert {
+            a.start == b.start && a.text != b.text
+        } else if a_insert {
+            a.start == b.start || a.start == b.end
+        } else if b_insert {
+            b.start == a.start || b.start == a.end
+        } else {
+            false
+        }
+    }
+
+    let changes: Vec<SideChange<'_>> = a
+        .changes
+        .iter()
+        .map(|change| SideChange { change, side: 0 })
+        .chain(
+            b.changes
+                .iter()
+                .map(|change| SideChange { change, side: 1 }),
+        )
+        .collect();
+    let mut parents: Vec<usize> = (0..changes.len()).collect();
+    let mut has_forced_pair = false;
+    for i in 0..changes.len() {
+        for j in i + 1..changes.len() {
+            if changes[i].side != changes[j].side && touches(changes[i].change, changes[j].change) {
+                has_forced_pair |= forces_conflict(changes[i].change, changes[j].change);
+                let left = root(&mut parents, i);
+                let right = root(&mut parents, j);
+                parents[right] = left;
+            }
+        }
+    }
+    if !has_forced_pair {
+        return w::merge(base, a, b)
+            .segments
+            .into_iter()
+            .map(|segment| (segment, false))
+            .collect();
+    }
+
+    let mut groups: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+    for i in 0..changes.len() {
+        groups.entry(root(&mut parents, i)).or_default().push(i);
+    }
+    let mut groups: Vec<Vec<usize>> = groups.into_values().collect();
+    groups.sort_by_key(|group| {
+        group
+            .iter()
+            .map(|&i| (changes[i].change.start, changes[i].change.end))
+            .min()
+            .unwrap()
+    });
+
+    let mut byte_offsets = Vec::with_capacity(base.chars().count() + 1);
+    byte_offsets.extend(base.char_indices().map(|(offset, _)| offset));
+    byte_offsets.push(base.len());
+    let slice = |start: usize, end: usize| &base[byte_offsets[start]..byte_offsets[end]];
+    let mut result = Vec::new();
+    let mut cursor = 0;
+    for group in groups {
+        let start = group
+            .iter()
+            .map(|&i| changes[i].change.start)
+            .min()
+            .unwrap();
+        let end = group.iter().map(|&i| changes[i].change.end).max().unwrap();
+        if cursor < start {
+            result.push((Segment::Text(slice(cursor, start).to_owned()), false));
+        }
+        let side_edit = |side: usize| Edit {
+            changes: group
+                .iter()
+                .filter(|&&i| changes[i].side == side)
+                .map(|&i| {
+                    let change = changes[i].change;
+                    Change {
+                        start: change.start - start,
+                        end: change.end - start,
+                        text: change.text.clone(),
+                    }
+                })
+                .collect(),
+        };
+        let a_edit = side_edit(0);
+        let b_edit = side_edit(1);
+        let forced = group.iter().any(|&i| {
+            group.iter().any(|&j| {
+                changes[i].side != changes[j].side
+                    && forces_conflict(changes[i].change, changes[j].change)
+            })
+        });
+        let base_part = slice(start, end);
+        if forced {
+            let apply_side = |edit: &Edit| {
+                let mut text = String::new();
+                let mut from = 0;
+                for change in &edit.changes {
+                    text.push_str(slice(start + from, start + change.start));
+                    text.push_str(&change.text);
+                    from = change.end;
+                }
+                text.push_str(slice(start + from, end));
+                text
+            };
+            result.push((
+                Segment::Conflict {
+                    base: base_part.to_owned(),
+                    a: apply_side(&a_edit),
+                    b: apply_side(&b_edit),
+                },
+                true,
+            ));
+        } else {
+            result.extend(
+                w::merge(base_part, &a_edit, &b_edit)
+                    .segments
+                    .into_iter()
+                    .map(|segment| (segment, false)),
+            );
+        }
+        cursor = end;
+    }
+    if cursor < byte_offsets.len() - 1 {
+        result.push((
+            Segment::Text(slice(cursor, byte_offsets.len() - 1).to_owned()),
+            false,
+        ));
+    }
+    result
+}
+
 fn run() -> ExitCode {
     let args: Vec<String> = env::args().collect();
     let [_, base_path, ours_path, theirs_path, marker_length, _result_path] = &args[..] else {
@@ -338,8 +509,8 @@ fn run() -> ExitCode {
     };
     let a = line_edit(&base, &ours);
     let b = line_edit(&base, &theirs);
-    let merged = w::merge(&base, &a, &b);
-    let (result, conflicts) = render(&merged.segments, marker_length);
+    let merged = driver_merge(&base, &a, &b);
+    let (result, conflicts) = render(&merged, marker_length);
     if fs::write(ours_path, result).is_err() {
         return ExitCode::from(1);
     }
