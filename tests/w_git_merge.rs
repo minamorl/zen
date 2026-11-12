@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::{Duration, Instant};
 
 static NEXT_DIRECTORY: AtomicUsize = AtomicUsize::new(0);
 
@@ -244,6 +245,32 @@ fn merges_one_hundred_thousand_lines_with_sparse_changes() {
 }
 
 #[test]
+fn merges_one_hundred_thousand_repeated_lines_with_sparse_changes_under_ten_seconds() {
+    let base_lines = vec!["同じ行・日本語\n".to_owned(); 100_000];
+    let mut ours_lines = base_lines.clone();
+    let mut theirs_lines = base_lines.clone();
+    let mut expected_lines = base_lines.clone();
+    for index in [1_000, 1_001, 1_002] {
+        ours_lines[index] = format!("手元{index}\n");
+        expected_lines[index] = ours_lines[index].clone();
+    }
+    for index in [98_000, 98_001, 98_002] {
+        theirs_lines[index] = format!("相手{index}\n");
+        expected_lines[index] = theirs_lines[index].clone();
+    }
+    let base = join(&base_lines);
+    let ours = join(&ours_lines);
+    let theirs = join(&theirs_lines);
+    let expected = join(&expected_lines);
+    let started = Instant::now();
+    let (output, result) = driver(base.as_bytes(), ours.as_bytes(), theirs.as_bytes(), 7);
+    let elapsed = started.elapsed();
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(result, expected.as_bytes());
+    assert!(elapsed <= Duration::from_secs(10), "elapsed={elapsed:?}");
+}
+
+#[test]
 fn properties_d1_d2_d3_d4() {
     let mut seed = 0x2a51_07c9_u64;
     for trial in 0..80 {
@@ -340,7 +367,7 @@ fn adjacent_identical_and_different_overlaps() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         String::from_utf8(bytes).unwrap(),
-        "同\n<<<<<<< ours\n甲\n||||||| base\n二\n=======\n乙\n>>>>>>> theirs\n"
+        "<<<<<<< ours\n同\n甲\n||||||| base\n一\n二\n=======\n同\n乙\n>>>>>>> theirs\n"
     );
 }
 
@@ -353,8 +380,18 @@ fn adjacent_identical_and_different_with_extra_line() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         String::from_utf8(bytes).unwrap(),
-        "同\n<<<<<<< ours\n甲\n||||||| base\n二\n=======\n乙\n追加\n>>>>>>> theirs\n三\n"
+        "<<<<<<< ours\n同\n甲\n||||||| base\n一\n二\n=======\n同\n乙\n追加\n>>>>>>> theirs\n三\n"
     );
+}
+
+#[test]
+fn common_suffix_and_prefix_anchor_repeated_lines() {
+    let base = "同じ行\n同じ行\n同じ行\n";
+    let ours = "甲\n同じ行\n同じ行\n";
+    let theirs = "同じ行\n同じ行\n乙\n";
+    let (output, bytes) = driver(base.as_bytes(), ours.as_bytes(), theirs.as_bytes(), 7);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(String::from_utf8(bytes).unwrap(), "甲\n同じ行\n乙\n");
 }
 
 #[test]
