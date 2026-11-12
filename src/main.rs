@@ -373,11 +373,12 @@ fn main() {
 }
 
 fn emit_failure(error: Failure, exit_code: i32) -> ! {
-    eprintln!(
-        "{}",
-        json!({"error":{"code":error.code,"message":error.message}})
-    );
+    eprintln!("{}", failure_json(&error));
     std::process::exit(exit_code);
+}
+
+fn failure_json(error: &Failure) -> Value {
+    json!({"error":{"code":error.code,"message":error.message}})
 }
 
 #[cfg(test)]
@@ -464,6 +465,41 @@ mod tests {
                 r#"{"text":"甲","edit":{"changes":[{"start":2,"end":2,"text":"a"}]}}"#
             ),
             "position_out_of_range"
+        );
+    }
+
+    #[test]
+    fn output_field_order_is_stable() {
+        assert_eq!(
+            run(
+                "compose",
+                r#"{"text":"甲乙","a":{"changes":[{"start":0,"end":1,"text":"丁"}]},"b":{"changes":[{"start":1,"end":2,"text":"戊"}]}}"#,
+            )
+            .unwrap()
+            .to_string(),
+            r#"{"edit":{"changes":[{"start":0,"end":2,"text":"丁戊"}]}}"#,
+        );
+        assert_eq!(
+            run(
+                "marks",
+                r#"{"text":"甲","marks":[{"id":"m","pos":0}],"edit":{"changes":[{"start":0,"end":0,"text":"乙"}]}}"#,
+            )
+            .unwrap()
+            .to_string(),
+            r#"{"marks":[{"id":"m","pos":1,"gravity":"right"}]}"#,
+        );
+        assert_eq!(
+            run(
+                "merge",
+                r#"{"base":"甲乙丙","a":{"changes":[{"start":0,"end":2,"text":"A"}]},"b":{"changes":[{"start":1,"end":3,"text":"B"}]}}"#,
+            )
+            .unwrap()
+            .to_string(),
+            r#"{"segments":[{"conflict":{"base":"甲乙丙","a":"A丙","b":"甲B"}}],"conflicts":1}"#,
+        );
+        assert_eq!(
+            failure_json(&Failure::new("invalid_field", "bad input")).to_string(),
+            r#"{"error":{"code":"invalid_field","message":"bad input"}}"#,
         );
     }
 }
