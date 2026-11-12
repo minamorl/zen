@@ -51,6 +51,6 @@ jobs:
           rustup toolchain install stable --profile minimal
           rustup default stable
       - name: Build merge driver
-        run: cargo build --bin w-git-merge
+        run: cargo build --bin zen-git-merge
       - name: Merge clean and conflicting histories with the driver
-        run: cargo test --test w_git_merge git_merges_cleanly_with_custom_driver && cargo test --test w_git_merge git_preserves_driver_conflict
+        run: cargo test --test zen_git_merge git_merges_cleanly_with_custom_driver && cargo test --test zen_git_merge git_preserves_driver_conflict

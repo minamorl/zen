@@ -14,7 +14,7 @@ impl Inputs {
             .map(PathBuf::from)
             .unwrap_or_else(std::env::temp_dir);
         directory.push(format!(
-            "w-git-merge-insertions-{}-{}",
+            "zen-git-merge-insertions-{}-{}",
             std::process::id(),
             NEXT_CASE.fetch_add(1, Ordering::Relaxed)
         ));
@@ -26,7 +26,7 @@ impl Inputs {
     }
 
     fn run(&self) -> (i32, String) {
-        let output = Command::new(env!("CARGO_BIN_EXE_w-git-merge"))
+        let output = Command::new(env!("CARGO_BIN_EXE_zen-git-merge"))
             .args([
                 self.0.join("base").to_str().unwrap(),
                 self.0.join("ours").to_str().unwrap(),

@@ -11,7 +11,7 @@ struct TempDir(PathBuf);
 impl TempDir {
     fn new() -> Self {
         let path = std::env::temp_dir().join(format!(
-            "w-git-merge-{}-{}",
+            "zen-git-merge-{}-{}",
             std::process::id(),
             NEXT_DIRECTORY.fetch_add(1, Ordering::Relaxed)
         ));
@@ -27,7 +27,7 @@ impl Drop for TempDir {
 }
 
 fn executable() -> &'static str {
-    env!("CARGO_BIN_EXE_w-git-merge")
+    env!("CARGO_BIN_EXE_zen-git-merge")
 }
 
 fn driver(base: &[u8], ours: &[u8], theirs: &[u8], marker_size: usize) -> (Output, Vec<u8>) {
@@ -431,12 +431,15 @@ fn git_merge_case(conflict: bool) {
     let dir = TempDir::new();
     git(&dir.0, &["init", "-q", "-b", "main"]);
     git(&dir.0, &["config", "user.name", "W Test"]);
-    git(&dir.0, &["config", "user.email", "w-test@example.invalid"]);
+    git(
+        &dir.0,
+        &["config", "user.email", "zen-test@example.invalid"],
+    );
     let driver_path = dir.0.join("driver with space");
     fs::copy(executable(), &driver_path).unwrap();
     let command = format!("\"{}\" %O %A %B %L %P", driver_path.display());
-    git(&dir.0, &["config", "merge.w.driver", &command]);
-    fs::write(dir.0.join(".gitattributes"), "* merge=w\n").unwrap();
+    git(&dir.0, &["config", "merge.zen.driver", &command]);
+    fs::write(dir.0.join(".gitattributes"), "* merge=zen\n").unwrap();
     fs::write(dir.0.join("file.txt"), "甲\n乙\n丙\n").unwrap();
     git(&dir.0, &["add", ".gitattributes", "file.txt"]);
     git(&dir.0, &["commit", "-qm", "base"]);
