@@ -62,6 +62,157 @@ fn join(lines: &[String]) -> String {
     lines.concat()
 }
 
+fn random_body(seed: &mut u64) -> Vec<String> {
+    let len = 4 + (next(seed) % 7) as usize;
+    let empty_at = 1 + (next(seed) as usize % (len - 2));
+    let mut lines = Vec::with_capacity(len);
+    for index in 0..len {
+        let word = match next(seed) % 4 {
+            0 => "甲",
+            1 => "日本語",
+            2 => "✨",
+            _ => "abc",
+        };
+        lines.push(if index == empty_at {
+            "\n".to_owned()
+        } else {
+            format!("{index}:{word}:{}\n", next(seed) % 100)
+        });
+    }
+    if next(seed) & (1 << 32) == 0 {
+        lines.last_mut().unwrap().pop();
+    }
+    lines
+}
+
+fn alter(lines: &mut Vec<String>, index: usize, operation: u64, label: &str) {
+    match operation {
+        0 => lines.insert(index, format!("挿入{label}\n")),
+        1 => {
+            lines.remove(index);
+        }
+        _ => lines[index] = format!("置換{label}\n"),
+    }
+}
+
+#[test]
+fn randomized_lines_and_edit_kinds() {
+    let mut seed = 0x7e9a_21d4_c350_u64;
+    let mut with_final_newline = 0;
+    let mut without_final_newline = 0;
+    let mut generated_bases = Vec::new();
+    for trial in 0..120 {
+        let case_seed = seed;
+        let lines = random_body(&mut seed);
+        let base = join(&lines);
+        generated_bases.push((case_seed, base.clone()));
+        if base.ends_with('\n') {
+            with_final_newline += 1;
+        } else {
+            without_final_newline += 1;
+        }
+        let i = 1 + (next(&mut seed) as usize % (lines.len() - 1));
+        let mut j = 1 + (next(&mut seed) as usize % (lines.len() - 2));
+        if j >= i {
+            j += 1;
+        }
+        let a_operation = next(&mut seed) % 3;
+        let b_operation = next(&mut seed) % 3;
+        let mut a = lines.clone();
+        let mut b = lines.clone();
+        alter(&mut a, i, a_operation, &format!("甲{trial}"));
+        alter(&mut b, j, b_operation, &format!("乙{trial}"));
+        let ours = join(&a);
+        let theirs = join(&b);
+        let context = format!(
+            "seed={case_seed:#x} trial={trial} i={i} j={j} a_operation={a_operation} b_operation={b_operation} base={base:?} ours={ours:?} theirs={theirs:?}"
+        );
+
+        for (left, right, expected) in [
+            (&ours, &base, &ours),
+            (&base, &theirs, &theirs),
+            (&ours, &ours, &ours),
+        ] {
+            let (output, result) = driver(base.as_bytes(), left.as_bytes(), right.as_bytes(), 7);
+            assert_eq!(output.status.code(), Some(0), "D1/D2 {context}");
+            assert_eq!(result, expected.as_bytes(), "D1/D2 {context}");
+        }
+
+        let mut both = lines.clone();
+        let mut combined = [
+            (i, a_operation, format!("甲{trial}")),
+            (j, b_operation, format!("乙{trial}")),
+        ];
+        combined.sort_by_key(|(index, _, _)| std::cmp::Reverse(*index));
+        for (index, operation, label) in combined {
+            alter(&mut both, index, operation, &label);
+        }
+        let expected = join(&both);
+        for (left, right) in [(&ours, &theirs), (&theirs, &ours)] {
+            let (output, result) = driver(base.as_bytes(), left.as_bytes(), right.as_bytes(), 7);
+            assert_eq!(output.status.code(), Some(0), "D3 {context}");
+            assert_eq!(result, expected.as_bytes(), "D3 {context}");
+        }
+
+        let mut a_overlap = lines.clone();
+        let mut b_overlap = lines.clone();
+        a_overlap[i] = format!("重なり甲{trial}\n");
+        b_overlap[i] = format!("重なり乙{trial}\n");
+        let overlap_ours = join(&a_overlap);
+        let overlap_theirs = join(&b_overlap);
+        let overlap_context = format!(
+            "seed={case_seed:#x} trial={trial} base={base:?} ours={overlap_ours:?} theirs={overlap_theirs:?}"
+        );
+        let (output, result) = driver(
+            base.as_bytes(),
+            overlap_ours.as_bytes(),
+            overlap_theirs.as_bytes(),
+            7,
+        );
+        let rendered = String::from_utf8(result).unwrap_or_else(|error| {
+            panic!("D4 {overlap_context} result_bytes={:?}", error.into_bytes())
+        });
+        assert_eq!(output.status.code(), Some(1), "D4 {overlap_context}");
+        assert!(rendered.contains("<<<<<<< ours\n"), "D4 {overlap_context}");
+        assert!(rendered.contains(&lines[i]), "D4 {overlap_context}");
+        assert!(rendered.contains(&a_overlap[i]), "D4 {overlap_context}");
+        assert!(rendered.contains(&b_overlap[i]), "D4 {overlap_context}");
+    }
+    assert!(
+        with_final_newline > 0,
+        "seed=0x7e9a21d4c350 generated_bases={generated_bases:?}"
+    );
+    assert!(
+        without_final_newline > 0,
+        "seed=0x7e9a21d4c350 generated_bases={generated_bases:?}"
+    );
+}
+
+#[test]
+fn merges_one_hundred_thousand_lines_with_sparse_changes() {
+    let base_lines: Vec<String> = (0..100_000)
+        .map(|index| format!("行{index:06}・日本語\n"))
+        .collect();
+    let mut ours_lines = base_lines.clone();
+    let mut theirs_lines = base_lines.clone();
+    let mut expected_lines = base_lines.clone();
+    for index in [10_000, 50_000, 90_000] {
+        ours_lines[index] = format!("手元{index}\n");
+        expected_lines[index] = ours_lines[index].clone();
+    }
+    for index in [20_000, 60_000, 80_000] {
+        theirs_lines[index] = format!("相手{index}\n");
+        expected_lines[index] = theirs_lines[index].clone();
+    }
+    let base = join(&base_lines);
+    let ours = join(&ours_lines);
+    let theirs = join(&theirs_lines);
+    let expected = join(&expected_lines);
+    let (output, result) = driver(base.as_bytes(), ours.as_bytes(), theirs.as_bytes(), 7);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(result, expected.as_bytes());
+}
+
 #[test]
 fn properties_d1_d2_d3_d4() {
     let mut seed = 0x2a51_07c9_u64;

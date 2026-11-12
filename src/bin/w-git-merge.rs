@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::process::ExitCode;
@@ -8,19 +9,121 @@ fn lines(text: &str) -> Vec<&str> {
     text.split_inclusive('\n').collect()
 }
 
+// A unique line on either side gives one possible partner for each line on
+// the other side. Its longest increasing subsequence is an exact LCS.
+fn unique_lcs(old: &[&str], new: &[&str]) -> Option<Vec<(usize, usize)>> {
+    let (source, target, swapped) = if old.len() <= new.len() {
+        (old, new, false)
+    } else {
+        (new, old, true)
+    };
+    let mut positions = HashMap::with_capacity(source.len());
+    for (index, line) in source.iter().enumerate() {
+        if positions.insert(*line, index).is_some() {
+            return None;
+        }
+    }
+    let candidates: Vec<(usize, usize)> = target
+        .iter()
+        .enumerate()
+        .filter_map(|(index, line)| positions.get(line).map(|&position| (position, index)))
+        .collect();
+    let mut tails: Vec<usize> = Vec::new();
+    let mut previous = vec![None; candidates.len()];
+    for (index, &(position, _)) in candidates.iter().enumerate() {
+        let length = tails.partition_point(|&tail| candidates[tail].0 < position);
+        if length > 0 {
+            previous[index] = Some(tails[length - 1]);
+        }
+        if length == tails.len() {
+            tails.push(index);
+        } else {
+            tails[length] = index;
+        }
+    }
+    let mut matches = Vec::with_capacity(tails.len());
+    let mut cursor = tails.last().copied();
+    while let Some(index) = cursor {
+        let (source_index, target_index) = candidates[index];
+        matches.push(if swapped {
+            (target_index, source_index)
+        } else {
+            (source_index, target_index)
+        });
+        cursor = previous[index];
+    }
+    matches.reverse();
+    Some(matches)
+}
+
+fn lcs_row(old: &[&str], new: &[&str]) -> Vec<usize> {
+    let mut row = vec![0; new.len() + 1];
+    for line in old {
+        let mut diagonal = 0;
+        for (index, other) in new.iter().enumerate() {
+            let above = row[index + 1];
+            row[index + 1] = if line == other {
+                diagonal + 1
+            } else {
+                row[index].max(above)
+            };
+            diagonal = above;
+        }
+    }
+    row
+}
+
+fn hirschberg(
+    old: &[&str],
+    new: &[&str],
+    old_at: usize,
+    new_at: usize,
+    out: &mut Vec<(usize, usize)>,
+) {
+    if old.is_empty() || new.is_empty() {
+        return;
+    }
+    if old.len() == 1 {
+        if let Some(index) = new.iter().position(|line| *line == old[0]) {
+            out.push((old_at, new_at + index));
+        }
+        return;
+    }
+    let middle = old.len() / 2;
+    let forward = lcs_row(&old[..middle], new);
+    let old_reverse: Vec<&str> = old[middle..].iter().rev().copied().collect();
+    let new_reverse: Vec<&str> = new.iter().rev().copied().collect();
+    let backward = lcs_row(&old_reverse, &new_reverse);
+    let split = (0..=new.len())
+        .max_by_key(|&index| (forward[index] + backward[new.len() - index], index))
+        .unwrap();
+    drop(forward);
+    drop(backward);
+    drop(old_reverse);
+    drop(new_reverse);
+    hirschberg(&old[..middle], &new[..split], old_at, new_at, out);
+    hirschberg(
+        &old[middle..],
+        &new[split..],
+        old_at + middle,
+        new_at + split,
+        out,
+    );
+}
+
+fn lcs_matches(old: &[&str], new: &[&str]) -> Vec<(usize, usize)> {
+    if let Some(matches) = unique_lcs(old, new) {
+        return matches;
+    }
+    let mut matches = Vec::new();
+    hirschberg(old, new, 0, 0, &mut matches);
+    matches
+}
+
 fn line_edit(base: &str, side: &str) -> Edit {
     let old = lines(base);
     let new = lines(side);
-    let mut lengths = vec![vec![0usize; new.len() + 1]; old.len() + 1];
-    for i in (0..old.len()).rev() {
-        for j in (0..new.len()).rev() {
-            lengths[i][j] = if old[i] == new[j] {
-                lengths[i + 1][j + 1] + 1
-            } else {
-                lengths[i + 1][j].max(lengths[i][j + 1])
-            };
-        }
-    }
+    let matches = lcs_matches(&old, &new);
 
     let mut offsets = Vec::with_capacity(old.len() + 1);
     offsets.push(0);
@@ -29,27 +132,19 @@ fn line_edit(base: &str, side: &str) -> Edit {
     }
 
     let mut changes = Vec::new();
-    let (mut i, mut j, mut start_i, mut start_j) = (0, 0, 0, 0);
-    while i < old.len() && j < new.len() {
-        if old[i] == new[j] {
-            if i != start_i || j != start_j {
-                changes.push(Change {
-                    start: offsets[start_i],
-                    end: offsets[i],
-                    text: new[start_j..j].concat(),
-                });
-            }
-            i += 1;
-            j += 1;
-            start_i = i;
-            start_j = j;
-        } else if lengths[i + 1][j] >= lengths[i][j + 1] {
-            i += 1;
-        } else {
-            j += 1;
+    let (mut start_i, mut start_j) = (0, 0);
+    for (i, j) in matches {
+        if i != start_i || j != start_j {
+            changes.push(Change {
+                start: offsets[start_i],
+                end: offsets[i],
+                text: new[start_j..j].concat(),
+            });
         }
+        start_i = i + 1;
+        start_j = j + 1;
     }
-    if i != old.len() || j != new.len() || i != start_i || j != start_j {
+    if start_i != old.len() || start_j != new.len() {
         changes.push(Change {
             start: offsets[start_i],
             end: offsets[old.len()],
@@ -86,50 +181,32 @@ fn conflict(out: &mut String, base: &str, a: &str, b: &str, length: usize) {
 }
 
 fn line_atoms(base: &[&str], side: &[&str]) -> (Vec<String>, Vec<String>) {
-    let mut lengths = vec![vec![0usize; side.len() + 1]; base.len() + 1];
-    for i in (0..base.len()).rev() {
-        for j in (0..side.len()).rev() {
-            lengths[i][j] = if base[i] == side[j] {
-                lengths[i + 1][j + 1] + 1
-            } else {
-                lengths[i + 1][j].max(lengths[i][j + 1])
-            };
-        }
-    }
+    let matches = lcs_matches(base, side);
     let mut atoms = vec![String::new(); base.len()];
     let mut insertions = vec![String::new(); base.len() + 1];
-    let (mut i, mut j, mut start_i, mut start_j) = (0, 0, 0, 0);
-    loop {
-        if i == base.len() || j == side.len() {
-            i = base.len();
-            j = side.len();
-        }
-        if i == base.len() || j == side.len() || base[i] == side[j] {
-            let old_count = i - start_i;
-            let new_count = j - start_j;
-            if old_count == 0 {
-                insertions[start_i].push_str(&side[start_j..j].concat());
-            } else {
-                for k in 0..old_count.min(new_count) {
-                    atoms[start_i + k].push_str(side[start_j + k]);
-                }
-                if new_count > old_count {
-                    atoms[i - 1].push_str(&side[start_j + old_count..j].concat());
-                }
-            }
-            if i == base.len() || j == side.len() {
-                break;
-            }
-            atoms[i].push_str(base[i]);
-            i += 1;
-            j += 1;
-            start_i = i;
-            start_j = j;
-        } else if lengths[i + 1][j] >= lengths[i][j + 1] {
-            i += 1;
+    let (mut start_i, mut start_j) = (0, 0);
+    for (i, j) in matches
+        .into_iter()
+        .chain(std::iter::once((base.len(), side.len())))
+    {
+        let old_count = i - start_i;
+        let new_count = j - start_j;
+        if old_count == 0 {
+            insertions[start_i].push_str(&side[start_j..j].concat());
         } else {
-            j += 1;
+            for k in 0..old_count.min(new_count) {
+                atoms[start_i + k].push_str(side[start_j + k]);
+            }
+            if new_count > old_count {
+                atoms[i - 1].push_str(&side[start_j + old_count..j].concat());
+            }
         }
+        if i == base.len() || j == side.len() {
+            break;
+        }
+        atoms[i].push_str(base[i]);
+        start_i = i + 1;
+        start_j = j + 1;
     }
     (atoms, insertions)
 }
