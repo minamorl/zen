@@ -39,3 +39,18 @@ jobs:
           package-manager-cache: false
       - name: Check Markdown and YAML formatting
         run: npx --yes prettier@3.6.2 --check README.md .github/workflows/ci.yml
+
+  git-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Build merge driver
+        run: cargo build --bin w-git-merge
+      - name: Merge clean and conflicting histories with the driver
+        run: cargo test --test w_git_merge git_merges_cleanly_with_custom_driver && cargo test --test w_git_merge git_preserves_driver_conflict

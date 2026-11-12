@@ -52,3 +52,15 @@ Overlapping changes appear as `{"conflict":{"base":"甲","a":"乙","b":"丙"}}` 
 ## License and support
 
 MIT licensed. Provided **as-is, without support**. See [LICENSE](LICENSE).
+
+## Git merge driver
+
+Build `w-git-merge` and configure it in each checkout that will run a merge:
+
+```sh
+cargo build --bin w-git-merge
+git config --local merge.w.name 'w three-way text merge'
+git config --local merge.w.driver "\"$(pwd)/target/debug/w-git-merge\" %O %A %B %L %P"
+```
+
+The repository's `.gitattributes` applies this driver to every path. Git supplies the common ancestor, ours, theirs, marker length, and path. The driver writes the result to Git's `%A` file. A clean merge exits 0; a conflict exits 1 and uses diff3 markers labelled `ours`, `base`, and `theirs`. Invalid UTF-8 exits 2 and leaves `%A` unchanged. Git keeps the driver definition in local `.git/config`, so each checkout needs the commands above before merging.
