@@ -1,7 +1,17 @@
 use serde_json::{json, Map, Value};
 use std::collections::HashSet;
 use std::io::{self, Read, Write};
-use w::{apply, compose, merge, transport_marks, Change, Edit, Gravity, Mark, Segment};
+use zen::{apply, compose, merge, transport_marks, Change, Edit, Gravity, Mark, Segment};
+
+const HELP: &str = "Usage: zen <apply|compose|marks|merge> < input.json\n\
+zen apply    stdin: {\"text\": string, \"edit\": edit}        stdout: {\"text\": string}\n\
+zen compose  stdin: {\"text\": string, \"a\": edit, \"b\": edit}  stdout: {\"edit\": edit}\n\
+zen marks    stdin: {\"text\": string, \"marks\": marks, \"edit\": edit}  stdout: {\"marks\": marks}\n\
+zen merge    stdin: {\"base\": string, \"a\": edit, \"b\": edit}  stdout: {\"segments\": segments, \"conflicts\": integer}\n\
+edit: {\"changes\":[{\"start\":integer,\"end\":integer,\"text\":string}]}\n\
+marks: [{\"id\":string,\"pos\":integer,\"gravity\":\"left\"|\"right\"}]\n\
+segments: [{\"text\":string}|{\"conflict\":{\"base\":string,\"a\":string,\"b\":string}}]\n\
+Positions count Unicode scalar values. Compose b positions refer to the text after a.\n";
 
 const PRIORITY: &[&str] = &[
     "invalid_json",
@@ -258,15 +268,31 @@ fn parse_json(input: &str) -> Result<Value, Failure> {
     Ok(value)
 }
 
+fn operation_fields(operation: &str) -> Option<&'static [&'static str]> {
+    match operation {
+        "apply" => Some(&["text", "edit"]),
+        "compose" => Some(&["text", "a", "b"]),
+        "marks" => Some(&["text", "marks", "edit"]),
+        "merge" => Some(&["base", "a", "b"]),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
 fn run(operation: &str, input: &str) -> Result<Value, Failure> {
+    run_selected(operation, operation_fields(operation), input)
+}
+
+fn run_selected(
+    operation: &str,
+    selected_fields: Option<&[&str]>,
+    input: &str,
+) -> Result<Value, Failure> {
     let value = parse_json(input)?;
     let mut check = Validation::default();
-    let expected: &[&str] = match operation {
-        "apply" => &["text", "edit"],
-        "compose" => &["text", "a", "b"],
-        "marks" => &["text", "marks", "edit"],
-        "merge" => &["base", "a", "b"],
-        _ => {
+    let expected = match selected_fields {
+        Some(fields) => fields,
+        None => {
             check.add(
                 "unknown_operation",
                 format!("unknown operation {operation}"),
@@ -356,11 +382,16 @@ fn edit_json(edit: &Edit) -> Value {
 
 fn main() {
     let operation = std::env::args().nth(1).unwrap_or_default();
+    if operation == "--help" || operation == "help" {
+        print!("{HELP}");
+        return;
+    }
+    let selected_fields = operation_fields(&operation);
     let mut input = String::new();
     if let Err(error) = io::stdin().read_to_string(&mut input) {
         emit_failure(Failure::new("invalid_json", error.to_string()), 2);
     }
-    match run(&operation, &input) {
+    match run_selected(&operation, selected_fields, &input) {
         Ok(output) => {
             let stdout = io::stdout();
             let mut writer = stdout.lock();

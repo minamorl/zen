@@ -3,7 +3,7 @@ use std::env;
 use std::fs;
 use std::process::ExitCode;
 
-use w::{Change, Edit, Segment};
+use zen::{Change, Edit, Segment};
 
 fn lines(text: &str) -> Vec<&str> {
     text.split_inclusive('\n').collect()
@@ -294,7 +294,7 @@ fn driver_merge(base: &str, a: &Edit, b: &Edit) -> Vec<(Segment, bool)> {
         }
     }
     if !has_forced_pair {
-        return w::merge(base, a, b)
+        return zen::merge(base, a, b)
             .segments
             .into_iter()
             .map(|segment| (segment, false))
@@ -375,7 +375,7 @@ fn driver_merge(base: &str, a: &Edit, b: &Edit) -> Vec<(Segment, bool)> {
             ));
         } else {
             result.extend(
-                w::merge(base_part, &a_edit, &b_edit)
+                zen::merge(base_part, &a_edit, &b_edit)
                     .segments
                     .into_iter()
                     .map(|segment| (segment, false)),
@@ -394,6 +394,10 @@ fn driver_merge(base: &str, a: &Edit, b: &Edit) -> Vec<(Segment, bool)> {
 
 fn run() -> ExitCode {
     let args: Vec<String> = env::args().collect();
+    if args.get(1).is_some_and(|argument| argument == "--help") {
+        println!("Usage: zen-git-merge %O %A %B %L %P\nGit passes the base, ours, theirs, marker length, and path. The merged result is written to %A.");
+        return ExitCode::SUCCESS;
+    }
     let [_, base_path, ours_path, theirs_path, marker_length, _result_path] = &args[..] else {
         return ExitCode::from(1);
     };

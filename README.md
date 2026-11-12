@@ -1,8 +1,8 @@
-# w
+# zen
 
-w treats text edits as values that can be applied, composed, used to move marks, and three-way merged through a JSON CLI.
+zen treats text edits as values that can be applied, composed, used to move marks, and three-way merged through a JSON CLI.
 
-`w` is a non-interactive CLI. Positions count Unicode scalar values, not UTF-8 bytes. A change uses a half-open range `[start, end)` in the text before that edit; `start == end` inserts at that position. Changes are ordered by `start`, may touch, and must not overlap or contain two insertions at the same position. An empty edit is `{"changes":[]}`. Input edits are normalized before each operation; output edits are in normal form (no empty insertion and no touching changes).
+`zen` is a non-interactive CLI. Positions count Unicode scalar values, not UTF-8 bytes. A change uses a half-open range `[start, end)` in the text before that edit; `start == end` inserts at that position. Changes are ordered by `start`, may touch, and must not overlap or contain two insertions at the same position. An empty edit is `{"changes":[]}`. Input edits are normalized before each operation; output edits are in normal form (no empty insertion and no touching changes).
 
 ## Laws
 
@@ -15,35 +15,41 @@ w treats text edits as values that can be applied, composed, used to move marks,
 
 ## CLI
 
-Run `w apply`, `w compose`, `w marks`, or `w merge`. Each invocation reads exactly one JSON object from standard input and writes exactly one JSON object followed by a newline to standard output. Success exits with code 0. Input errors exit with code 2, write `{"error":{"code":"...","message":"..."}}` to standard error, and leave standard output empty; internal failures exit with code 1.
+From this repository, install both `zen` and `zen-git-merge`:
+
+```sh
+cargo install --path .
+```
+
+Run `zen apply`, `zen compose`, `zen marks`, or `zen merge`. Use `zen --help` or `zen help` for their input and output shapes. Each operation reads exactly one JSON object from standard input and writes exactly one JSON object followed by a newline to standard output. Success exits with code 0. Input errors exit with code 2, write `{"error":{"code":"...","message":"..."}}` to standard error, and leave standard output empty; internal failures exit with code 1.
 
 An edit has the form `{"changes":[{"start":0,"end":1,"text":"乙"}]}`. A mark has `id`, `pos`, and optional `gravity` (`left` or `right`, default `right`). Mark output always includes `gravity` and preserves input order and IDs.
 
 Apply an edit to text:
 
 ```sh
-printf '%s\n' '{"text":"甲乙","edit":{"changes":[{"start":1,"end":2,"text":"丙"}]}}' | w apply
+printf '%s\n' '{"text":"甲乙","edit":{"changes":[{"start":1,"end":2,"text":"丙"}]}}' | zen apply
 # {"text":"甲丙"}
 ```
 
 Compose `a` with `b`. The positions in `b` refer to the text after `a`; the returned edit refers to the original text:
 
 ```sh
-printf '%s\n' '{"text":"甲乙","a":{"changes":[{"start":0,"end":0,"text":"新"}]},"b":{"changes":[{"start":2,"end":3,"text":"丙"}]}}' | w compose
+printf '%s\n' '{"text":"甲乙","a":{"changes":[{"start":0,"end":0,"text":"新"}]},"b":{"changes":[{"start":2,"end":3,"text":"丙"}]}}' | zen compose
 # {"edit":{"changes":[{"start":0,"end":0,"text":"新"},{"start":1,"end":2,"text":"丙"}]}}
 ```
 
 Transport marks through an edit:
 
 ```sh
-printf '%s\n' '{"text":"甲乙","marks":[{"id":"left","pos":1,"gravity":"left"},{"id":"right","pos":1}],"edit":{"changes":[{"start":1,"end":1,"text":"新"}]}}' | w marks
+printf '%s\n' '{"text":"甲乙","marks":[{"id":"left","pos":1,"gravity":"left"},{"id":"right","pos":1}],"edit":{"changes":[{"start":1,"end":1,"text":"新"}]}}' | zen marks
 # {"marks":[{"id":"left","pos":1,"gravity":"left"},{"id":"right","pos":2,"gravity":"right"}]}
 ```
 
 Merge two edits whose positions both refer to `base`:
 
 ```sh
-printf '%s\n' '{"base":"甲乙","a":{"changes":[{"start":0,"end":1,"text":"丙"}]},"b":{"changes":[{"start":1,"end":2,"text":"丁"}]}}' | w merge
+printf '%s\n' '{"base":"甲乙","a":{"changes":[{"start":0,"end":1,"text":"丙"}]},"b":{"changes":[{"start":1,"end":2,"text":"丁"}]}}' | zen merge
 # {"segments":[{"text":"丙丁"}],"conflicts":0}
 ```
 
@@ -55,12 +61,11 @@ MIT licensed. Provided **as-is, without support**. See [LICENSE](LICENSE).
 
 ## Git merge driver
 
-Build `w-git-merge` and configure it in each checkout that will run a merge:
+After installation, configure `zen-git-merge` in each checkout that will run a merge:
 
 ```sh
-cargo build --bin w-git-merge
-git config --local merge.w.name 'w three-way text merge'
-git config --local merge.w.driver "\"$(pwd)/target/debug/w-git-merge\" %O %A %B %L %P"
+git config --local merge.zen.name 'zen three-way text merge'
+git config --local merge.zen.driver 'zen-git-merge %O %A %B %L %P'
 ```
 
 The repository's `.gitattributes` applies this driver to every path. Git supplies the common ancestor, ours, theirs, marker length, and path. The driver writes the result to Git's `%A` file. A clean merge exits 0; a conflict exits 1 and uses diff3 markers labelled `ours`, `base`, and `theirs`. Invalid UTF-8 exits 2 and leaves `%A` unchanged. Git keeps the driver definition in local `.git/config`, so each checkout needs the commands above before merging.
