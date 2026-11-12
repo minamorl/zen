@@ -112,10 +112,7 @@ fn randomized_lines_and_edit_kinds() {
             without_final_newline += 1;
         }
         let i = 1 + (next(&mut seed) as usize % (lines.len() - 1));
-        let mut j = 1 + (next(&mut seed) as usize % (lines.len() - 2));
-        if j >= i {
-            j += 1;
-        }
+        let j = 1 + (next(&mut seed) as usize % (lines.len() - 1));
         let a_operation = next(&mut seed) % 3;
         let b_operation = next(&mut seed) % 3;
         let mut a = lines.clone();
@@ -138,20 +135,53 @@ fn randomized_lines_and_edit_kinds() {
             assert_eq!(result, expected.as_bytes(), "D1/D2 {context}");
         }
 
-        let mut both = lines.clone();
-        let mut combined = [
-            (i, a_operation, format!("甲{trial}")),
-            (j, b_operation, format!("乙{trial}")),
-        ];
-        combined.sort_by_key(|(index, _, _)| std::cmp::Reverse(*index));
-        for (index, operation, label) in combined {
-            alter(&mut both, index, operation, &label);
-        }
-        let expected = join(&both);
-        for (left, right) in [(&ours, &theirs), (&theirs, &ours)] {
-            let (output, result) = driver(base.as_bytes(), left.as_bytes(), right.as_bytes(), 7);
-            assert_eq!(output.status.code(), Some(0), "D3 {context}");
-            assert_eq!(result, expected.as_bytes(), "D3 {context}");
+        let conflicts = ours != theirs
+            && (i == j
+                || (a_operation == 0 && b_operation != 0 && i == j + 1)
+                || (b_operation == 0 && a_operation != 0 && j == i + 1));
+        if conflicts {
+            for (left, right) in [(&ours, &theirs), (&theirs, &ours)] {
+                let (output, result) =
+                    driver(base.as_bytes(), left.as_bytes(), right.as_bytes(), 7);
+                let rendered = String::from_utf8(result).unwrap_or_else(|error| {
+                    panic!("D4 {context} result_bytes={:?}", error.into_bytes())
+                });
+                assert_eq!(output.status.code(), Some(1), "D4 {context}");
+                let (_, after_ours) = rendered
+                    .split_once("<<<<<<< ours\n")
+                    .unwrap_or_else(|| panic!("D4 {context} result={rendered:?}"));
+                let (_, after_base) = after_ours
+                    .split_once("||||||| base\n")
+                    .unwrap_or_else(|| panic!("D4 {context} result={rendered:?}"));
+                let (_, after_separator) = after_base
+                    .split_once("=======\n")
+                    .unwrap_or_else(|| panic!("D4 {context} result={rendered:?}"));
+                assert!(
+                    after_separator.contains(">>>>>>> theirs\n"),
+                    "D4 {context} result={rendered:?}"
+                );
+            }
+        } else {
+            let expected = if ours == theirs {
+                ours.clone()
+            } else {
+                let mut both = lines.clone();
+                let mut combined = [
+                    (i, a_operation, format!("甲{trial}")),
+                    (j, b_operation, format!("乙{trial}")),
+                ];
+                combined.sort_by_key(|(index, _, _)| std::cmp::Reverse(*index));
+                for (index, operation, label) in combined {
+                    alter(&mut both, index, operation, &label);
+                }
+                join(&both)
+            };
+            for (left, right) in [(&ours, &theirs), (&theirs, &ours)] {
+                let (output, result) =
+                    driver(base.as_bytes(), left.as_bytes(), right.as_bytes(), 7);
+                assert_eq!(output.status.code(), Some(0), "D2/D3 {context}");
+                assert_eq!(result, expected.as_bytes(), "D2/D3 {context}");
+            }
         }
 
         let mut a_overlap = lines.clone();
