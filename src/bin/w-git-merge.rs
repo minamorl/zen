@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::process::ExitCode;
@@ -10,114 +9,123 @@ fn lines(text: &str) -> Vec<&str> {
     text.split_inclusive('\n').collect()
 }
 
-// A unique line on either side gives one possible partner for each line on
-// the other side. Its longest increasing subsequence is an exact LCS.
-fn unique_lcs(old: &[&str], new: &[&str]) -> Option<Vec<(usize, usize)>> {
-    let (source, target, swapped) = if old.len() <= new.len() {
-        (old, new, false)
-    } else {
-        (new, old, true)
-    };
-    let mut positions = HashMap::with_capacity(source.len());
-    for (index, line) in source.iter().enumerate() {
-        if positions.insert(*line, index).is_some() {
-            return None;
-        }
-    }
-    let candidates: Vec<(usize, usize)> = target
-        .iter()
-        .enumerate()
-        .filter_map(|(index, line)| positions.get(line).map(|&position| (position, index)))
-        .collect();
-    let mut tails: Vec<usize> = Vec::new();
-    let mut previous = vec![None; candidates.len()];
-    for (index, &(position, _)) in candidates.iter().enumerate() {
-        let length = tails.partition_point(|&tail| candidates[tail].0 < position);
-        if length > 0 {
-            previous[index] = Some(tails[length - 1]);
-        }
-        if length == tails.len() {
-            tails.push(index);
-        } else {
-            tails[length] = index;
-        }
-    }
-    let mut matches = Vec::with_capacity(tails.len());
-    let mut cursor = tails.last().copied();
-    while let Some(index) = cursor {
-        let (source_index, target_index) = candidates[index];
-        matches.push(if swapped {
-            (target_index, source_index)
-        } else {
-            (source_index, target_index)
-        });
-        cursor = previous[index];
-    }
-    matches.reverse();
-    Some(matches)
-}
+// Myers' midpoint search uses two furthest-reaching frontiers. The arrays are
+// linear in the input length, including when every line is the same.
+fn midpoint(old: &[&str], new: &[&str]) -> Option<(usize, usize)> {
+    let (n, m) = (old.len() as isize, new.len() as isize);
+    let max_d = (n + m + 1) / 2;
+    let offset = max_d + 1;
+    let size = (2 * offset + 1) as usize;
+    let mut forward = vec![-1_isize; size];
+    let mut backward = vec![-1_isize; size];
+    forward[(offset + 1) as usize] = 0;
+    backward[(offset + 1) as usize] = 0;
+    let delta = n - m;
+    let odd = delta % 2 != 0;
 
-fn lcs_row(old: &[&str], new: &[&str]) -> Vec<usize> {
-    let mut row = vec![0; new.len() + 1];
-    for line in old {
-        let mut diagonal = 0;
-        for (index, other) in new.iter().enumerate() {
-            let above = row[index + 1];
-            row[index + 1] = if line == other {
-                diagonal + 1
+    for d in 0..=max_d {
+        for k in (-d..=d).step_by(2) {
+            let index = (offset + k) as usize;
+            let mut x = if k == -d || (k != d && forward[index - 1] < forward[index + 1]) {
+                forward[index + 1]
             } else {
-                row[index].max(above)
+                forward[index - 1] + 1
             };
-            diagonal = above;
+            let mut y = x - k;
+            while x < n && y < m && x >= 0 && y >= 0 && old[x as usize] == new[y as usize] {
+                x += 1;
+                y += 1;
+            }
+            forward[index] = x;
+            if odd && d > 0 {
+                let reverse_k = delta - k;
+                if reverse_k > -d && reverse_k < d {
+                    let reverse_x = backward[(offset + reverse_k) as usize];
+                    if reverse_x >= 0 && x + reverse_x >= n {
+                        return Some((x as usize, y as usize));
+                    }
+                }
+            }
+        }
+        for k in (-d..=d).step_by(2) {
+            let index = (offset + k) as usize;
+            let mut x = if k == -d || (k != d && backward[index - 1] < backward[index + 1]) {
+                backward[index + 1]
+            } else {
+                backward[index - 1] + 1
+            };
+            let mut y = x - k;
+            while x < n
+                && y < m
+                && x >= 0
+                && y >= 0
+                && old[(n - x - 1) as usize] == new[(m - y - 1) as usize]
+            {
+                x += 1;
+                y += 1;
+            }
+            backward[index] = x;
+            if !odd {
+                let front_k = delta - k;
+                if front_k >= -d && front_k <= d {
+                    let front_x = forward[(offset + front_k) as usize];
+                    if front_x >= 0 && front_x + x >= n {
+                        return Some(((n - x) as usize, (m - y) as usize));
+                    }
+                }
+            }
         }
     }
-    row
+    None
 }
 
-fn hirschberg(
+fn myers_matches(
     old: &[&str],
     new: &[&str],
     old_at: usize,
     new_at: usize,
     out: &mut Vec<(usize, usize)>,
 ) {
-    if old.is_empty() || new.is_empty() {
-        return;
+    let mut prefix = 0;
+    while prefix < old.len() && prefix < new.len() && old[prefix] == new[prefix] {
+        out.push((old_at + prefix, new_at + prefix));
+        prefix += 1;
     }
-    if old.len() == 1 {
-        if let Some(index) = new.iter().position(|line| *line == old[0]) {
-            out.push((old_at, new_at + index));
+    let (old, new) = (&old[prefix..], &new[prefix..]);
+    let (old_at, new_at) = (old_at + prefix, new_at + prefix);
+    let mut suffix = 0;
+    while suffix < old.len()
+        && suffix < new.len()
+        && old[old.len() - suffix - 1] == new[new.len() - suffix - 1]
+    {
+        suffix += 1;
+    }
+    let (middle_old, middle_new) = (&old[..old.len() - suffix], &new[..new.len() - suffix]);
+    if !middle_old.is_empty() && !middle_new.is_empty() {
+        if let Some((x, y)) = midpoint(middle_old, middle_new) {
+            if (x, y) != (0, 0) && (x, y) != (middle_old.len(), middle_new.len()) {
+                myers_matches(&middle_old[..x], &middle_new[..y], old_at, new_at, out);
+                myers_matches(
+                    &middle_old[x..],
+                    &middle_new[y..],
+                    old_at + x,
+                    new_at + y,
+                    out,
+                );
+            }
         }
-        return;
     }
-    let middle = old.len() / 2;
-    let forward = lcs_row(&old[..middle], new);
-    let old_reverse: Vec<&str> = old[middle..].iter().rev().copied().collect();
-    let new_reverse: Vec<&str> = new.iter().rev().copied().collect();
-    let backward = lcs_row(&old_reverse, &new_reverse);
-    let split = (0..=new.len())
-        .max_by_key(|&index| (forward[index] + backward[new.len() - index], index))
-        .unwrap();
-    drop(forward);
-    drop(backward);
-    drop(old_reverse);
-    drop(new_reverse);
-    hirschberg(&old[..middle], &new[..split], old_at, new_at, out);
-    hirschberg(
-        &old[middle..],
-        &new[split..],
-        old_at + middle,
-        new_at + split,
-        out,
-    );
+    for index in 0..suffix {
+        out.push((
+            old_at + old.len() - suffix + index,
+            new_at + new.len() - suffix + index,
+        ));
+    }
 }
 
 fn lcs_matches(old: &[&str], new: &[&str]) -> Vec<(usize, usize)> {
-    if let Some(matches) = unique_lcs(old, new) {
-        return matches;
-    }
     let mut matches = Vec::new();
-    hirschberg(old, new, 0, 0, &mut matches);
+    myers_matches(old, new, 0, 0, &mut matches);
     matches
 }
 
@@ -181,111 +189,12 @@ fn conflict(out: &mut String, base: &str, a: &str, b: &str, length: usize) {
     marker(out, '>', length, Some("theirs"));
 }
 
-fn line_atoms(base: &[&str], side: &[&str]) -> (Vec<String>, Vec<String>) {
-    let matches = lcs_matches(base, side);
-    let mut atoms = vec![String::new(); base.len()];
-    let mut insertions = vec![String::new(); base.len() + 1];
-    let (mut start_i, mut start_j) = (0, 0);
-    for (i, j) in matches
-        .into_iter()
-        .chain(std::iter::once((base.len(), side.len())))
-    {
-        let old_count = i - start_i;
-        let new_count = j - start_j;
-        if old_count == 0 {
-            insertions[start_i].push_str(&side[start_j..j].concat());
-        } else {
-            for k in 0..old_count.min(new_count) {
-                atoms[start_i + k].push_str(side[start_j + k]);
-            }
-            if new_count > old_count {
-                atoms[i - 1].push_str(&side[start_j + old_count..j].concat());
-            }
-        }
-        if i == base.len() || j == side.len() {
-            break;
-        }
-        atoms[i].push_str(base[i]);
-        start_i = i + 1;
-        start_j = j + 1;
-    }
-    (atoms, insertions)
-}
-
-fn refine_conflict(base: &str, a: &str, b: &str) -> Vec<Segment> {
-    let base_lines = lines(base);
-    let a_lines = lines(a);
-    let b_lines = lines(b);
-    let (a_atoms, a_insertions) = line_atoms(&base_lines, &a_lines);
-    let (b_atoms, b_insertions) = line_atoms(&base_lines, &b_lines);
-    let mut result = Vec::new();
-    for i in 0..=base_lines.len() {
-        let insertion = if a_insertions[i] == b_insertions[i] {
-            a_insertions[i].clone()
-        } else {
-            format!("{}{}", a_insertions[i], b_insertions[i])
-        };
-        if !insertion.is_empty() {
-            result.push(Segment::Text(insertion));
-        }
-        if i == base_lines.len() {
-            break;
-        }
-        let base_line = base_lines[i];
-        let a_line = &a_atoms[i];
-        let b_line = &b_atoms[i];
-        if a_line == b_line {
-            result.push(Segment::Text(a_line.clone()));
-        } else if a_line == base_line {
-            result.push(Segment::Text(b_line.clone()));
-        } else if b_line == base_line {
-            result.push(Segment::Text(a_line.clone()));
-        } else {
-            result.push(Segment::Conflict {
-                base: base_line.to_owned(),
-                a: a_line.clone(),
-                b: b_line.clone(),
-            });
-        }
-    }
-    let mut text_without_newline = false;
-    for segment in &result {
-        match segment {
-            Segment::Text(value) if !value.is_empty() => {
-                text_without_newline = !value.ends_with('\n');
-            }
-            Segment::Conflict { .. } if text_without_newline => {
-                return vec![Segment::Conflict {
-                    base: base.to_owned(),
-                    a: a.to_owned(),
-                    b: b.to_owned(),
-                }];
-            }
-            Segment::Conflict { .. } => text_without_newline = false,
-            Segment::Text(_) => {}
-        }
-    }
-    result
-}
-
 fn render(segments: &[(Segment, bool)], marker_length: usize) -> (String, usize) {
     let mut out = String::new();
     let mut conflicts = 0;
     let mut pending = (String::new(), String::new(), String::new());
     let mut has_pending = false;
-    let refined: Vec<Segment> = segments
-        .iter()
-        .flat_map(|(segment, forced)| match segment {
-            Segment::Text(value) => vec![Segment::Text(value.clone())],
-            Segment::Conflict { base, a, b } if *forced => vec![Segment::Conflict {
-                base: base.clone(),
-                a: a.clone(),
-                b: b.clone(),
-            }],
-            Segment::Conflict { base, a, b } => refine_conflict(base, a, b),
-        })
-        .collect();
-    for segment in &refined {
+    for (segment, _) in segments {
         match segment {
             Segment::Text(value) => {
                 if !value.is_empty() {
@@ -519,4 +428,54 @@ fn run() -> ExitCode {
 
 fn main() -> ExitCode {
     run()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::lcs_matches;
+
+    #[test]
+    fn myers_finds_an_lcs_with_repeated_lines() {
+        let bodies: Vec<Vec<&str>> = (0..=5)
+            .flat_map(|len| {
+                (0..1 << len).map(move |bits| {
+                    (0..len)
+                        .map(|index| {
+                            if bits & (1 << index) == 0 {
+                                "同\n"
+                            } else {
+                                "異\n"
+                            }
+                        })
+                        .collect()
+                })
+            })
+            .collect();
+        for old in &bodies {
+            for new in &bodies {
+                let matches = lcs_matches(old, new);
+                let mut lengths = vec![vec![0; new.len() + 1]; old.len() + 1];
+                for i in (0..old.len()).rev() {
+                    for j in (0..new.len()).rev() {
+                        lengths[i][j] = if old[i] == new[j] {
+                            1 + lengths[i + 1][j + 1]
+                        } else {
+                            lengths[i + 1][j].max(lengths[i][j + 1])
+                        };
+                    }
+                }
+                assert_eq!(
+                    matches.len(),
+                    lengths[0][0],
+                    "old={old:?} new={new:?} matches={matches:?}"
+                );
+                for (index, &(i, j)) in matches.iter().enumerate() {
+                    assert_eq!(old[i], new[j]);
+                    if index > 0 {
+                        assert!(matches[index - 1].0 < i && matches[index - 1].1 < j);
+                    }
+                }
+            }
+        }
+    }
 }
