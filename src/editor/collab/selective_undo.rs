@@ -16,6 +16,7 @@ use crate::editor::edit::{
     intent::EditIntent,
     transaction::Transaction,
 };
+use crate::editor::workspace::version::Revision;
 
 /// A selective undo that could not be committed; no state is changed.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -67,6 +68,11 @@ impl SelectiveUndo {
     /// Returns the sequencer for inspecting its workspace and history.
     pub fn sequencer(&self) -> &Sequencer {
         &self.sequencer
+    }
+
+    /// Removes retained snapshots older than the floor.
+    pub fn prune_before(&mut self, floor: Revision) {
+        self.sequencer.prune_before(floor);
     }
 
     /// Submits an ordinary edit to the same sequencer.
