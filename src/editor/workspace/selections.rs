@@ -1,0 +1,1 @@
+//! Selections in workspace views.

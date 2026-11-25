@@ -1,5 +1,7 @@
 //! Value-based text edits in Unicode scalar coordinates.
 
+pub mod editor;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Change {
     pub start: usize,

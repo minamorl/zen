@@ -1,0 +1,1 @@
+//! Receipts for collaborative operations.
