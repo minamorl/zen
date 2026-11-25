@@ -18,7 +18,7 @@
 //! * **Pruning:** `prune_before(floor)` removes precisely entries with revisions
 //!   below `floor`; it does not modify any retained capture or the high-water mark.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::sync::Arc;
 
@@ -115,6 +115,41 @@ impl VersionedWorkspace {
         self.catalog
             .update(id, text)
             .map_err(WorkspaceError::Catalog)?;
+        self.revision = next;
+        Ok(())
+    }
+
+    /// Atomically replaces distinct live buffers and advances exactly once.
+    pub fn update_batch(
+        &mut self,
+        updates: impl IntoIterator<Item = (BufferId, Text)>,
+    ) -> Result<(), WorkspaceError> {
+        let next = self
+            .revision
+            .next()
+            .map_err(|_| WorkspaceError::RevisionOverflow)?;
+        let updates: Vec<_> = updates.into_iter().collect();
+        let mut seen = BTreeSet::new();
+        for (id, _) in &updates {
+            if !seen.insert(*id) {
+                return Err(WorkspaceError::Catalog(CatalogError::DuplicateBufferId(
+                    *id,
+                )));
+            }
+            if !self.catalog.contains_live(*id) {
+                let error = if self.catalog.is_tombstoned(*id) {
+                    CatalogError::TombstonedBufferId(*id)
+                } else {
+                    CatalogError::UnknownBuffer(*id)
+                };
+                return Err(WorkspaceError::Catalog(error));
+            }
+        }
+        for (id, text) in updates {
+            self.catalog
+                .update(id, text)
+                .expect("validated live buffer");
+        }
         self.revision = next;
         Ok(())
     }
@@ -266,6 +301,40 @@ mod tests {
     use super::*;
     use crate::editor::edit::ids::BufferId;
     use crate::editor::text::utf8::Text;
+
+    #[test]
+    fn batch_is_atomic_and_preserves_tombstones() {
+        let a = BufferId::new(1);
+        let b = BufferId::new(2);
+        let dead = BufferId::new(3);
+        let mut catalog = BufferCatalog::new();
+        for id in [a, b, dead] {
+            catalog.register(id, Text::from_str("old")).unwrap();
+        }
+        catalog.remove(dead).unwrap();
+        let mut workspace = VersionedWorkspace::new(catalog);
+        let before = workspace.capture();
+        for invalid in [dead, BufferId::new(4), a] {
+            assert!(workspace
+                .update_batch([(a, Text::from_str("new")), (invalid, Text::empty())])
+                .is_err());
+            assert_eq!(workspace.capture(), before);
+        }
+        workspace
+            .update_batch([(a, Text::from_str("A")), (b, Text::from_str("B"))])
+            .unwrap();
+        assert_eq!(workspace.revision(), Revision::new(1));
+        assert_eq!(workspace.catalog().get(a).unwrap().as_str(), "A");
+        assert_eq!(workspace.catalog().get(b).unwrap().as_str(), "B");
+        assert!(workspace.catalog().is_tombstoned(dead));
+        workspace.revision = Revision::MAX;
+        let before = workspace.capture();
+        assert_eq!(
+            workspace.update_batch([(a, Text::empty())]),
+            Err(WorkspaceError::RevisionOverflow)
+        );
+        assert_eq!(workspace.capture(), before);
+    }
 
     #[test]
     fn exhaustive_catalog_and_history_sequences() {
