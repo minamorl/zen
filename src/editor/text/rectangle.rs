@@ -1,0 +1,1 @@
+//! Rectangular text regions.

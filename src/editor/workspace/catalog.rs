@@ -1,0 +1,1 @@
+//! Cataloguing workspace buffers.

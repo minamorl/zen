@@ -1,0 +1,1 @@
+//! Text column measurement.

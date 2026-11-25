@@ -1,0 +1,1 @@
+//! Workspace state snapshots.
