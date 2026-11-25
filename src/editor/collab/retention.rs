@@ -469,10 +469,10 @@ fn sha256(mut bytes: Vec<u8>) -> [u8; 32] {
         0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
         0x5be0cd19,
     ];
-    for block in bytes.chunks_exact(64) {
+    for block in bytes.as_chunks::<64>().0 {
         let mut w = [0u32; 64];
-        for (word, chunk) in w.iter_mut().zip(block.chunks_exact(4)) {
-            *word = u32::from_be_bytes(chunk.try_into().expect("four bytes"));
+        for (word, chunk) in w.iter_mut().zip(block.as_chunks::<4>().0) {
+            *word = u32::from_be_bytes(*chunk);
         }
         for i in 16..64 {
             let s0 = w[i - 15].rotate_right(7) ^ w[i - 15].rotate_right(18) ^ (w[i - 15] >> 3);
@@ -508,8 +508,8 @@ fn sha256(mut bytes: Vec<u8>) -> [u8; 32] {
         }
     }
     let mut digest = [0; 32];
-    for (chunk, word) in digest.chunks_exact_mut(4).zip(state) {
-        chunk.copy_from_slice(&word.to_be_bytes());
+    for (chunk, word) in digest.as_chunks_mut::<4>().0.iter_mut().zip(state) {
+        *chunk = word.to_be_bytes();
     }
     digest
 }
