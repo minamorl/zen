@@ -40,12 +40,18 @@ macro_rules! scalar_id {
     };
 }
 
-scalar_id!(/// Identifies an editor buffer.
-    BufferId);
-scalar_id!(/// Identifies an actor.
-    ActorId);
-scalar_id!(/// Identifies a nonce within an actor's transactions.
-    Nonce);
+scalar_id!(
+    /// Identifies an editor buffer.
+    BufferId
+);
+scalar_id!(
+    /// Identifies an actor.
+    ActorId
+);
+scalar_id!(
+    /// Identifies a nonce within an actor's transactions.
+    Nonce
+);
 
 impl Nonce {
     /// Returns the next nonce, or `None` at `u64::MAX`.
