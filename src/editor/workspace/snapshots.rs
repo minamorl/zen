@@ -65,6 +65,14 @@ impl fmt::Display for WorkspaceError {
 impl std::error::Error for WorkspaceError {}
 
 impl VersionedWorkspace {
+    pub(crate) fn resume_from_snapshot(snapshot: &WorkspaceSnapshot) -> Self {
+        Self {
+            revision: snapshot.revision,
+            catalog: snapshot.catalog.clone(),
+            origin: Arc::new(()),
+        }
+    }
+
     /// Takes ownership of an initial catalog at revision zero.
     pub fn new(catalog: BufferCatalog) -> Self {
         Self {

@@ -698,6 +698,65 @@ impl RetainedHistory {
         Ok(receipt)
     }
 
+    pub(crate) fn record_restored(
+        &mut self,
+        request: RequestId,
+        original: Transaction,
+        forward: Transaction,
+        receipt: CommitReceipt,
+        after: WorkspaceSnapshot,
+    ) -> Result<CommitReceipt, RetentionError> {
+        let txn = original.intent().txn();
+        if self.identities.contains_key(&txn) {
+            return Err(RetentionError::TxnIdReuse(txn));
+        }
+        if self.requests.contains_key(&request) {
+            return Err(RetentionError::RequestIdReuse(request));
+        }
+        let base = original.intent().base();
+        if base > self.tip() {
+            return Err(RetentionError::FutureRevision {
+                revision: base,
+                tip: self.tip(),
+            });
+        }
+        if base >= self.floor() && self.rebase(&original)? != forward {
+            return Err(RetentionError::InvalidCommit);
+        }
+        if receipt.intent() != original.intent()
+            || receipt.previous() != self.tip()
+            || receipt.committed() != after.revision()
+            || forward.intent() != original.intent().with_base(self.tip())
+        {
+            return Err(RetentionError::InvalidCommit);
+        }
+        let before = self.snapshot_at_index(self.steps.len());
+        if forward
+            .apply_with_inverse(before)
+            .map_err(|_| RetentionError::InvalidCommit)?
+            .catalog()
+            != after.catalog()
+        {
+            return Err(RetentionError::InvalidCommit);
+        }
+        let mut snapshots = self.snapshots.clone();
+        snapshots
+            .record(after.clone())
+            .map_err(|_| RetentionError::InvalidCommit)?;
+        let identity = Identity {
+            request,
+            receipt,
+            original_digest: transaction_digest(&original),
+            forward_digest: transaction_digest(&forward),
+            after_digest: snapshot_digest(&after),
+        };
+        self.steps.push(Step { forward, after });
+        self.snapshots = snapshots;
+        self.identities.insert(txn, identity);
+        self.requests.insert(request, txn);
+        Ok(receipt)
+    }
+
     /// Replays all commits after `base` and returns the resulting catalog.
     pub fn replay(&self, base: Revision) -> Result<BufferCatalog, RetentionError> {
         let index = self.index(base)?;

@@ -25,6 +25,10 @@ pub struct WorkspaceEvent {
 }
 
 impl WorkspaceEvent {
+    pub(crate) fn from_committed(receipt: CommitReceipt, applied: Transaction) -> Self {
+        Self { receipt, applied }
+    }
+
     /// Projects a receipt already recorded by this sequencer, if its history remains available.
     /// Callers consuming receipts are responsible for deduplicating retries.
     pub fn from_receipt(sequencer: &Sequencer, receipt: CommitReceipt) -> Option<Self> {
