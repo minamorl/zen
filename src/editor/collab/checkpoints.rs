@@ -93,6 +93,24 @@ struct RetryRecord {
     buffer: Option<BufferId>,
     op_digest: [u8; 32],
     applied_digest: Option<[u8; 32]>,
+    history_digests: Option<([u8; 32], [u8; 32], [u8; 32])>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum RetainedStep {
+    Edit(RequestId, Transaction, Transaction, CommitReceipt),
+    Open(BufferId, Text, CommitReceipt),
+    Close(BufferId, CommitReceipt),
+}
+
+impl RetainedStep {
+    fn receipt(&self) -> CommitReceipt {
+        match self {
+            Self::Edit(_, _, _, receipt) | Self::Open(_, _, receipt) | Self::Close(_, receipt) => {
+                *receipt
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -107,7 +125,7 @@ pub struct CheckpointState {
     edit_history: EditHistory,
     history: RetainedHistory,
     delivery: DeliveryLog,
-    retained_edits: Vec<(RequestId, Transaction, Transaction, CommitReceipt)>,
+    retained_steps: Vec<RetainedStep>,
     retry_by_request: BTreeMap<RequestId, RetryRecord>,
     retry_by_txn: BTreeMap<TxnId, RequestId>,
 }
@@ -151,7 +169,7 @@ impl CheckpointState {
             edit_history: EditHistory::new(),
             history: RetainedHistory::new(snapshot.clone()),
             delivery: DeliveryLog::new(snapshot),
-            retained_edits: Vec::new(),
+            retained_steps: Vec::new(),
             retry_by_request: BTreeMap::new(),
             retry_by_txn: BTreeMap::new(),
         }
@@ -371,6 +389,13 @@ impl CheckpointState {
         let applied_digest = prepared_edit
             .as_ref()
             .map(|(_, applied, _)| transaction_digest(applied));
+        let history_digests = prepared_edit.as_ref().map(|(original, applied, _)| {
+            (
+                super::retention::transaction_digest(original),
+                super::retention::transaction_digest(applied),
+                super::retention::snapshot_digest(&staged.capture()),
+            )
+        });
         match &op {
             CheckpointOp::Open { text, .. } => self
                 .workspace
@@ -405,14 +430,25 @@ impl CheckpointState {
                         after,
                     )
                     .expect("validated delivery");
-                self.retained_edits.push((request, txn, applied, receipt));
+                self.retained_steps
+                    .push(RetainedStep::Edit(request, txn, applied, receipt));
             }
             CheckpointOp::MarkSaved { .. } => unreachable!(),
         }
         if !matches!(op, CheckpointOp::Edit { .. }) {
-            self.retained_edits.clear();
             let after = self.workspace.capture();
-            history = RetainedHistory::new(after.clone());
+            let id = buffer.expect("lifecycle buffer");
+            let text = match &op {
+                CheckpointOp::Open { text, .. } => Some(text.clone()),
+                _ => None,
+            };
+            history
+                .record_lifecycle(id, text.clone(), after.clone())
+                .expect("validated lifecycle");
+            self.retained_steps.push(match text {
+                Some(text) => RetainedStep::Open(id, text, receipt),
+                None => RetainedStep::Close(id, receipt),
+            });
             delivery = DeliveryLog::new(after);
         }
         self.names = names;
@@ -422,8 +458,8 @@ impl CheckpointState {
         self.edit_history = edit_history;
         self.history = history;
         self.delivery = delivery;
-        self.retained_edits
-            .retain(|(_, _, _, receipt)| receipt.committed() > self.history.floor());
+        self.retained_steps
+            .retain(|step| step.receipt().committed() > self.history.floor());
         self.retry_by_request.insert(
             request,
             RetryRecord {
@@ -433,6 +469,7 @@ impl CheckpointState {
                 buffer,
                 op_digest: digest,
                 applied_digest,
+                history_digests,
             },
         );
         self.retry_by_txn.insert(intent.txn(), request);
@@ -466,13 +503,13 @@ impl CheckpointState {
             .compact(retained_floor)
             .map_err(CheckpointError::Retention)?;
         delivery
-            .compact(retained_floor)
+            .compact(retained_floor.max(delivery.floor()))
             .map_err(CheckpointError::Delivery)?;
         self.floor = floor;
         self.history = history;
         self.delivery = delivery;
-        self.retained_edits
-            .retain(|(_, _, _, receipt)| receipt.committed() > self.history.floor());
+        self.retained_steps
+            .retain(|step| step.receipt().committed() > self.history.floor());
         Ok(())
     }
     pub fn checkpoint(&self) -> Checkpoint {
@@ -485,7 +522,7 @@ impl CheckpointState {
             floor: self.floor,
             journal: self.journal.clone(),
             retained_floor: self.history.base_snapshot().clone(),
-            retained_edits: self.retained_edits.clone(),
+            retained_steps: self.retained_steps.clone(),
             retry_by_request: self.retry_by_request.clone(),
             retry_by_txn: self.retry_by_txn.clone(),
         }
@@ -501,7 +538,7 @@ pub struct Checkpoint {
     floor: Revision,
     journal: CommitJournal,
     retained_floor: WorkspaceSnapshot,
-    retained_edits: Vec<(RequestId, Transaction, Transaction, CommitReceipt)>,
+    retained_steps: Vec<RetainedStep>,
     retry_by_request: BTreeMap<RequestId, RetryRecord>,
     retry_by_txn: BTreeMap<TxnId, RequestId>,
 }
@@ -548,9 +585,68 @@ impl Checkpoint {
         let mut workspace = VersionedWorkspace::resume_from_snapshot(&self.retained_floor);
         let base = workspace.capture();
         let mut history = RetainedHistory::new(base.clone());
+        for record in self.retry_by_request.values() {
+            if record.receipt.committed() <= base.revision() {
+                if let Some((original, forward, after)) = record.history_digests {
+                    history
+                        .seed_compacted_receipt(
+                            record.request,
+                            record.receipt,
+                            original,
+                            forward,
+                            after,
+                        )
+                        .map_err(|_| CheckpointError::InconsistentState)?;
+                }
+            }
+        }
         let mut delivery = DeliveryLog::new(base);
         let mut edit_history = EditHistory::new();
-        for (request, original, applied, receipt) in &self.retained_edits {
+        for step in &self.retained_steps {
+            let receipt = step.receipt();
+            if self
+                .retry_by_txn
+                .get(&receipt.txn())
+                .and_then(|request| self.retry_by_request.get(request))
+                .is_none_or(|record| record.receipt != receipt)
+            {
+                return Err(CheckpointError::InconsistentState);
+            }
+            let (request, original, applied, receipt) = match step {
+                RetainedStep::Edit(request, original, applied, receipt) => {
+                    (request, original, applied, receipt)
+                }
+                RetainedStep::Open(id, text, receipt) => {
+                    if receipt.previous() != workspace.revision() {
+                        return Err(CheckpointError::InconsistentState);
+                    }
+                    workspace
+                        .register(*id, text.clone())
+                        .map_err(|_| CheckpointError::InconsistentState)?;
+                    let after = workspace.capture();
+                    history
+                        .record_lifecycle(*id, Some(text.clone()), after.clone())
+                        .map_err(|_| CheckpointError::InconsistentState)?;
+                    delivery = DeliveryLog::new(after);
+                    edit_history = EditHistory::new();
+                    continue;
+                }
+                RetainedStep::Close(id, receipt) => {
+                    if receipt.previous() != workspace.revision() {
+                        return Err(CheckpointError::InconsistentState);
+                    }
+                    workspace
+                        .remove(*id)
+                        .map_err(|_| CheckpointError::InconsistentState)?;
+                    let after = workspace.capture();
+                    history
+                        .record_lifecycle(*id, None, after.clone())
+                        .map_err(|_| CheckpointError::InconsistentState)?;
+                    delivery = DeliveryLog::new(after);
+                    edit_history = EditHistory::new();
+                    continue;
+                }
+            };
             let before = workspace.capture();
             if self.retry_by_request.get(request).is_none_or(|record| {
                 record.receipt != *receipt
@@ -621,7 +717,7 @@ impl Checkpoint {
             edit_history,
             history,
             delivery,
-            retained_edits: self.retained_edits.clone(),
+            retained_steps: self.retained_steps.clone(),
             retry_by_request: self.retry_by_request.clone(),
             retry_by_txn: self.retry_by_txn.clone(),
         })
@@ -903,7 +999,10 @@ mod tests {
             Err(CheckpointError::InconsistentState)
         ));
         let mut tampered = state.checkpoint();
-        let applied = &mut tampered.retained_edits[0].2;
+        let RetainedStep::Edit(_, _, applied, _) = tampered.retained_steps.last_mut().unwrap()
+        else {
+            panic!("expected edit")
+        };
         let patch = Patch::new(vec![Splice::new(
             ByteSpan::validate_in(&Text::from_str("Abcd"), 0, 4).unwrap(),
             Text::from_str("AbcD"),
@@ -1159,6 +1258,34 @@ mod tests {
                 equivalent(&continuous, &restored);
             },
         );
+    }
+
+    #[test]
+    fn compact_restore_preserves_public_history_receipt() {
+        let mut state = setup();
+        let id = state
+            .apply(open(1, state.revision(), "a", "old"))
+            .unwrap()
+            .buffer
+            .unwrap();
+        let op = edit(2, state.revision(), id, "old", 0, 3, "new");
+        let txn = match &op {
+            CheckpointOp::Edit { txn, .. } => txn.intent().txn(),
+            _ => unreachable!(),
+        };
+        let receipt = state.apply(op).unwrap().receipt.unwrap();
+        state.compact(state.revision()).unwrap();
+        assert_eq!(
+            state.history().receipt_by_request(RequestId::new(2)),
+            Some(receipt)
+        );
+        assert_eq!(state.history().receipt_by_txn(txn), Some(receipt));
+        let restored = state.checkpoint().restore().unwrap();
+        assert_eq!(
+            restored.history().receipt_by_request(RequestId::new(2)),
+            Some(receipt)
+        );
+        assert_eq!(restored.history().receipt_by_txn(txn), Some(receipt));
     }
 
     #[test]
