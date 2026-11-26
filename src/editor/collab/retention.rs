@@ -9,7 +9,11 @@ use super::{
     receipt::CommitReceipt,
 };
 use crate::editor::{
-    edit::{ids::TxnId, transaction::Transaction},
+    edit::{
+        ids::{BufferId, TxnId},
+        transaction::{Transaction, TransactionError},
+    },
+    text::utf8::Text,
     workspace::{
         catalog::BufferCatalog,
         snapshots::{SnapshotError, SnapshotStore, WorkspaceSnapshot},
@@ -52,6 +56,44 @@ mod tests {
         text::{span::ByteSpan, utf8::Text},
         workspace::snapshots::VersionedWorkspace,
     };
+
+    #[test]
+    fn rebase_rejects_unavailable_buffer_at_base_before_unrelated_open() {
+        for closed in [false, true] {
+            let b = BufferId::new(1);
+            let c = BufferId::new(2);
+            let mut catalog = BufferCatalog::new();
+            if closed {
+                catalog.register(b, Text::from_str("old")).unwrap();
+                catalog.remove(b).unwrap();
+            }
+            let mut workspace = VersionedWorkspace::new(catalog);
+            let mut history = RetainedHistory::new(workspace.capture());
+            let patch = Patch::new(vec![Splice::new(
+                ByteSpan::validate_in(&Text::empty(), 0, 0).unwrap(),
+                Text::from_str("x"),
+            )])
+            .unwrap();
+            let txn = Transaction::new(
+                EditIntent::for_actor(ActorId::new(1), Nonce::new(1), workspace.revision()),
+                vec![(b, patch)],
+            )
+            .unwrap();
+            workspace.register(c, Text::from_str("other")).unwrap();
+            history
+                .record_lifecycle(c, Some(Text::from_str("other")), workspace.capture())
+                .unwrap();
+            let error = if closed {
+                TransactionError::BufferClosed(b)
+            } else {
+                TransactionError::UnknownBuffer(b)
+            };
+            assert_eq!(
+                history.rebase(&txn),
+                Err(RetentionError::Rebase(RebaseError::Transaction(error)))
+            );
+        }
+    }
 
     #[test]
     fn sha256_known_vectors() {
@@ -400,7 +442,7 @@ fn put_len(bytes: &mut Vec<u8>, value: usize) {
     put_u64(bytes, u64::try_from(value).expect("length fits u64"));
 }
 
-fn transaction_digest(transaction: &Transaction) -> [u8; 32] {
+pub(crate) fn transaction_digest(transaction: &Transaction) -> [u8; 32] {
     let mut bytes = Vec::new();
     bytes.extend_from_slice(b"zen:retention:txn:v1\0");
     let intent = transaction.intent();
@@ -424,7 +466,7 @@ fn transaction_digest(transaction: &Transaction) -> [u8; 32] {
     sha256(bytes)
 }
 
-fn snapshot_digest(snapshot: &WorkspaceSnapshot) -> [u8; 32] {
+pub(crate) fn snapshot_digest(snapshot: &WorkspaceSnapshot) -> [u8; 32] {
     let mut bytes = Vec::new();
     bytes.extend_from_slice(b"zen:retention:snapshot:v1\0");
     put_u64(&mut bytes, snapshot.revision().raw());
@@ -446,7 +488,7 @@ fn snapshot_digest(snapshot: &WorkspaceSnapshot) -> [u8; 32] {
 }
 
 // FIPS 180-4 SHA-256, implemented here to keep retention independent of dependencies.
-fn sha256(mut bytes: Vec<u8>) -> [u8; 32] {
+pub(crate) fn sha256(mut bytes: Vec<u8>) -> [u8; 32] {
     const K: [u32; 64] = [
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4,
         0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe,
@@ -525,8 +567,15 @@ struct Identity {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Step {
-    forward: Transaction,
+    kind: StepKind,
     after: WorkspaceSnapshot,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum StepKind {
+    Edit(Transaction),
+    Open(BufferId, Text),
+    Close(BufferId),
 }
 
 /// Retains a floor snapshot and validated transitions after it.
@@ -546,6 +595,34 @@ pub struct RetainedHistory {
 }
 
 impl RetainedHistory {
+    pub(crate) fn seed_compacted_receipt(
+        &mut self,
+        request: RequestId,
+        receipt: CommitReceipt,
+        original_digest: [u8; 32],
+        forward_digest: [u8; 32],
+        after_digest: [u8; 32],
+    ) -> Result<(), RetentionError> {
+        let txn = receipt.txn();
+        if receipt.committed() > self.floor()
+            || self.identities.contains_key(&txn)
+            || self.requests.contains_key(&request)
+        {
+            return Err(RetentionError::InvalidCommit);
+        }
+        self.identities.insert(
+            txn,
+            Identity {
+                request,
+                receipt,
+                original_digest,
+                forward_digest,
+                after_digest,
+            },
+        );
+        self.requests.insert(request, txn);
+        Ok(())
+    }
     /// Starts with an actual workspace capture at the initial floor.
     pub fn new(base: WorkspaceSnapshot) -> Self {
         let mut snapshots = SnapshotStore::new();
@@ -691,7 +768,10 @@ impl RetainedHistory {
             forward_digest: transaction_digest(&forward),
             after_digest: snapshot_digest(&after),
         };
-        self.steps.push(Step { forward, after });
+        self.steps.push(Step {
+            kind: StepKind::Edit(forward),
+            after,
+        });
         self.snapshots = snapshots;
         self.identities.insert(txn, identity);
         self.requests.insert(request, txn);
@@ -750,7 +830,10 @@ impl RetainedHistory {
             forward_digest: transaction_digest(&forward),
             after_digest: snapshot_digest(&after),
         };
-        self.steps.push(Step { forward, after });
+        self.steps.push(Step {
+            kind: StepKind::Edit(forward),
+            after,
+        });
         self.snapshots = snapshots;
         self.identities.insert(txn, identity);
         self.requests.insert(request, txn);
@@ -762,10 +845,21 @@ impl RetainedHistory {
         let index = self.index(base)?;
         let mut catalog = self.snapshot_at_index(index).catalog().clone();
         for step in &self.steps[index..] {
-            catalog = step
-                .forward
-                .apply_to_catalog(&catalog)
-                .map_err(|_| RetentionError::InvalidCommit)?;
+            match &step.kind {
+                StepKind::Edit(txn) => {
+                    catalog = txn
+                        .apply_to_catalog(&catalog)
+                        .map_err(|_| RetentionError::InvalidCommit)?
+                }
+                StepKind::Open(id, text) => catalog
+                    .register(*id, text.clone())
+                    .map_err(|_| RetentionError::InvalidCommit)?,
+                StepKind::Close(id) => {
+                    catalog
+                        .remove(*id)
+                        .map_err(|_| RetentionError::InvalidCommit)?;
+                }
+            }
         }
         Ok(catalog)
     }
@@ -773,19 +867,77 @@ impl RetainedHistory {
     /// Rebases a proposal from its base over all retained intervening commits.
     pub fn rebase(&self, proposal: &Transaction) -> Result<Transaction, RetentionError> {
         let index = self.index(proposal.intent().base())?;
+        proposal
+            .apply_with_inverse(self.snapshot_at_index(index))
+            .map_err(|error| RetentionError::Rebase(RebaseError::Transaction(error)))?;
         let mut rebased = proposal.clone();
         for i in index..self.steps.len() {
-            rebased = rebase_over_step(
-                &rebased,
-                RebaseStep {
-                    before: self.snapshot_at_index(i),
-                    committed: &self.steps[i].forward,
-                    after: &self.steps[i].after,
-                },
-            )
-            .map_err(RetentionError::Rebase)?;
+            if let StepKind::Edit(forward) = &self.steps[i].kind {
+                rebased = rebase_over_step(
+                    &rebased,
+                    RebaseStep {
+                        before: self.snapshot_at_index(i),
+                        committed: forward,
+                        after: &self.steps[i].after,
+                    },
+                )
+                .map_err(RetentionError::Rebase)?;
+            } else {
+                let error = match &self.steps[i].kind {
+                    StepKind::Open(id, _)
+                        if rebased.patches().iter().any(|(buffer, _)| buffer == id) =>
+                    {
+                        Some(TransactionError::UnknownBuffer(*id))
+                    }
+                    StepKind::Close(id)
+                        if rebased.patches().iter().any(|(buffer, _)| buffer == id) =>
+                    {
+                        Some(TransactionError::BufferClosed(*id))
+                    }
+                    _ => None,
+                };
+                if let Some(error) = error {
+                    return Err(RetentionError::Rebase(RebaseError::Transaction(error)));
+                }
+                rebased = Transaction::new(
+                    rebased.intent().with_base(self.steps[i].after.revision()),
+                    rebased.patches().to_vec(),
+                )
+                .map_err(|_| RetentionError::InvalidCommit)?;
+            }
         }
         Ok(rebased)
+    }
+
+    pub(crate) fn record_lifecycle(
+        &mut self,
+        buffer: BufferId,
+        text: Option<Text>,
+        after: WorkspaceSnapshot,
+    ) -> Result<(), RetentionError> {
+        let before = self.snapshot_at_index(self.steps.len());
+        let mut catalog = before.catalog().clone();
+        let kind = if let Some(text) = text {
+            catalog
+                .register(buffer, text.clone())
+                .map_err(|_| RetentionError::InvalidCommit)?;
+            StepKind::Open(buffer, text)
+        } else {
+            catalog
+                .remove(buffer)
+                .map_err(|_| RetentionError::InvalidCommit)?;
+            StepKind::Close(buffer)
+        };
+        if before.revision().next().ok() != Some(after.revision()) || &catalog != after.catalog() {
+            return Err(RetentionError::InvalidCommit);
+        }
+        let mut snapshots = self.snapshots.clone();
+        snapshots
+            .record(after.clone())
+            .map_err(|_| RetentionError::InvalidCommit)?;
+        self.steps.push(Step { kind, after });
+        self.snapshots = snapshots;
+        Ok(())
     }
 
     /// Advances the floor, discarding older transitions but never identity records.
