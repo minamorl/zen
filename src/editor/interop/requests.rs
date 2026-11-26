@@ -271,6 +271,11 @@ fn compile_edits(
 }
 
 impl Request {
+    pub(crate) fn rebind_origin(mut self, origin_snapshot: WorkspaceSnapshot) -> Self {
+        self.origin_snapshot = origin_snapshot;
+        self
+    }
+
     pub fn actor(&self) -> ActorId {
         self.actor
     }
